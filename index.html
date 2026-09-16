@@ -69,6 +69,24 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 </div>
 </section>
 
+
+<section class="card">
+<h3>📅 Date-wise Daily Summary</h3>
+<div class="grid">
+<div class="field"><label>Select Date</label><input id="dailyDate" type="date"></div>
+</div>
+<div class="actions"><button class="btn primary" id="dailyBtn">Show Daily Summary</button></div>
+<div id="dailyBox" style="display:none;margin-top:12px">
+<div class="totals">
+<div class="total"><small>Sales</small><strong id="ds">₹0</strong></div>
+<div class="total"><small>Purchase</small><strong id="dm">₹0</strong></div>
+<div class="total"><small>Expense</small><strong id="de" class="orange">₹0</strong></div>
+<div class="total"><small>Profit</small><strong id="dp" class="green">₹0</strong></div>
+</div>
+<p class="note" id="dailyLabel"></p>
+</div>
+</section>
+
 <section class="card">
 <h3>📅 Monthly Summary</h3>
 <div class="tablewrap">
@@ -95,15 +113,15 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <input id="search" placeholder="Search date...">
 <div class="tablewrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Mydeen</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
-<div class="version">Mass Sales Ledger • Version 1.4.0</div>
+<div class="version">Mass Sales Ledger • Version 1.5.0</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const KEY='mass_sales_ledger_v1_4';
+const KEY='mass_sales_ledger_v1_5';
 let entries=JSON.parse(localStorage.getItem(KEY)||'null');
 let editId=null;
 if(!entries){
- const old=JSON.parse(localStorage.getItem('mass_sales_ledger_v1_3')||'null');
+ const old=JSON.parse(localStorage.getItem('mass_sales_ledger_v1_4')||'null');
  if(Array.isArray(old)){
   entries=old.map(x=>({...x,expense:Number(x.expense||0),profit:Number(x.sales||0)-Number(x.mydeen||0)-Number(x.expense||0)}));
   localStorage.setItem(KEY,JSON.stringify(entries));
@@ -169,6 +187,25 @@ function inReportRange(x, from, to){
   }
   return x.date>=from && x.date<=to;
 }
+
+function dailyCalc(){
+  const d=$('dailyDate').value;
+  if(!d){alert('Date select செய்யவும்');return}
+  const list=entries.filter(x=>!x.summary && x.date===d);
+  const s=list.reduce((a,x)=>a+Number(x.sales||0),0);
+  const m=list.reduce((a,x)=>a+Number(x.mydeen||0),0);
+  const e=list.reduce((a,x)=>a+Number(x.expense||0),0);
+  const p=s-m-e;
+  $('ds').textContent=money(s);
+  $('dm').textContent=money(m);
+  $('de').textContent=money(e);
+  $('dp').textContent=money(p);
+  $('dailyLabel').textContent=`${d.split('-').reverse().join('.')} • ${list.length} entry(ies)`;
+  $('dailyBox').style.display='block';
+}
+$('dailyDate').value=today();
+$('dailyBtn').onclick=dailyCalc;
+
 function reportCalc(){
   let from=$('fromDate').value, to=$('toDate').value;
   if(!from||!to){alert('From Date மற்றும் To Date select செய்யவும்');return}
@@ -209,7 +246,7 @@ $('toDate').value=today();
 $('backup').onclick=()=>{
   const data={
     app:"Mass Sales Ledger",
-    version:"1.4.0",
+    version:"1.5.0",
     exportedAt:new Date().toISOString(),
     entries:entries
   };
