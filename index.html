@@ -33,7 +33,7 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <div class="field"><label>Profit (Auto)</label><input id="profit" type="number" readonly value="0"></div>
 </div>
 <div class="actions"><button class="btn primary" id="save">Save Entry</button><button class="btn light" id="cancel" style="display:none">Cancel Edit</button></div>
-<p class="note">Profit = Sales − Purchase (Mydeen) − Expense. 12.08–09.09 is one cumulative opening entry; it is not double-counted. Data is saved on this device and works offline.</p>
+<p class="note">Profit = Sales − Purchase (Mydeen) − Expense. Data is saved on this device and works offline.</p>
 </section>
 
 <section class="card">
@@ -48,6 +48,37 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <div class="actions"><button class="btn light" id="export">⬇️ Export CSV</button><button class="btn danger" id="clear">🗑️ Clear All</button></div>
 </section>
 
+
+
+<section class="card">
+<h3>📊 Date Range Report</h3>
+<div class="grid">
+<div class="field"><label>From Date</label><input id="fromDate" type="date"></div>
+<div class="field"><label>To Date</label><input id="toDate" type="date"></div>
+</div>
+<div class="actions"><button class="btn primary" id="reportBtn">Show Report</button></div>
+<div id="reportBox" style="display:none;margin-top:12px">
+<div class="totals">
+<div class="total"><small>Sales</small><strong id="rs">₹0</strong></div>
+<div class="total"><small>Purchase</small><strong id="rm">₹0</strong></div>
+<div class="total"><small>Expense</small><strong id="re" class="orange">₹0</strong></div>
+<div class="total"><small>Net Profit</small><strong id="rp" class="green">₹0</strong></div>
+<div class="total"><small>Profit Margin</small><strong id="rmargin" class="green">0%</strong></div>
+</div>
+<p class="note" id="reportLabel"></p>
+</div>
+</section>
+
+<section class="card">
+<h3>📅 Monthly Summary</h3>
+<div class="tablewrap">
+<table style="min-width:620px">
+<thead><tr><th>Month</th><th>Sales</th><th>Purchase</th><th>Expense</th><th>Net Profit</th><th>Margin</th></tr></thead>
+<tbody id="monthRows"></tbody>
+</table>
+</div>
+<p class="note">The 12.08–09.09 cumulative opening amount is kept separately so it is not incorrectly allocated to a single calendar month.</p>
+</section>
 
 <section class="card">
 <h3>💾 Backup / Restore</h3>
@@ -64,15 +95,15 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <input id="search" placeholder="Search date...">
 <div class="tablewrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Mydeen</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
-<div class="version">Mass Sales Ledger • Version 1.3.0</div>
+<div class="version">Mass Sales Ledger • Version 1.4.0</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
-const KEY='mass_sales_ledger_v1_3';
+const KEY='mass_sales_ledger_v1_4';
 let entries=JSON.parse(localStorage.getItem(KEY)||'null');
 let editId=null;
 if(!entries){
- const old=JSON.parse(localStorage.getItem('mass_sales_ledger_v1_2')||'null');
+ const old=JSON.parse(localStorage.getItem('mass_sales_ledger_v1_3')||'null');
  if(Array.isArray(old)){
   entries=old.map(x=>({...x,expense:Number(x.expense||0),profit:Number(x.sales||0)-Number(x.mydeen||0)-Number(x.expense||0)}));
   localStorage.setItem(KEY,JSON.stringify(entries));
@@ -81,7 +112,7 @@ if(!entries){
 
 if(!entries){
  entries=[
-  {id:1,date:'2026-09-09',sales:202775,mydeen:113086,expense:0,profit:89689,summary:true},
+  {id:1,date:'2026-09-09',sales:202775,mydeen:113086,expense:0,profit:89689,summary:true,periodStart:'2026-08-12',periodEnd:'2026-09-09'},
   {id:2,date:'2026-09-10',sales:25050,mydeen:16041,expense:0,profit:9009},
   {id:3,date:'2026-09-11',sales:23800,mydeen:13861,expense:0,profit:9939},
   {id:4,date:'2026-09-12',sales:3300,mydeen:1785,expense:0,profit:1515},
@@ -121,6 +152,7 @@ function render(){
  $('rows').innerHTML=list.length?list.map(x=>`<tr><td>${x.summary?'12.08–09.09':x.date.split('-').reverse().join('.')}</td><td>${money(x.sales)}</td><td>${money(x.mydeen)}</td><td>${money(x.expense)}</td><td class="green">${money(x.profit)}</td><td><button class="btn light" onclick="editEntry(${x.id})">Edit</button> <button class="btn danger" onclick="deleteEntry(${x.id})">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Entries இல்லை</td></tr>';
  let s=entries.reduce((a,x)=>a+x.sales,0),m=entries.reduce((a,x)=>a+x.mydeen,0),e=entries.reduce((a,x)=>a+x.expense,0);
  $('ts').textContent=money(s);$('tm').textContent=money(m);$('te').textContent=money(e);$('tp').textContent=money(s-m-e);$('tc').textContent=entries.length;
+ monthlySummary();
 }
 $('search').oninput=render;
 $('clear').onclick=()=>{if(confirm('அனைத்து entries-ஐயும் delete செய்யவா?')){entries=[];localStorage.setItem(KEY,'[]');render()}};
@@ -129,10 +161,55 @@ $('export').onclick=()=>{
  let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='mass-sales-ledger.csv';a.click();
 };
 
+
+function inReportRange(x, from, to){
+  if(x.summary){
+    const a=x.periodStart||x.date, b=x.periodEnd||x.date;
+    return a<=to && b>=from;
+  }
+  return x.date>=from && x.date<=to;
+}
+function reportCalc(){
+  let from=$('fromDate').value, to=$('toDate').value;
+  if(!from||!to){alert('From Date மற்றும் To Date select செய்யவும்');return}
+  if(from>to){alert('From Date, To Date-க்கு முன்னதாக இருக்க வேண்டும்');return}
+  const list=entries.filter(x=>inReportRange(x,from,to));
+  let s=list.reduce((a,x)=>a+Number(x.sales||0),0);
+  let m=list.reduce((a,x)=>a+Number(x.mydeen||0),0);
+  let e=list.reduce((a,x)=>a+Number(x.expense||0),0);
+  let p=s-m-e;
+  let margin=s?((p/s)*100):0;
+  $('rs').textContent=money(s);$('rm').textContent=money(m);$('re').textContent=money(e);$('rp').textContent=money(p);
+  $('rmargin').textContent=margin.toFixed(2)+'%';
+  $('reportLabel').textContent=`${from.split('-').reverse().join('.')} → ${to.split('-').reverse().join('.')} • ${list.length} record(s) included`;
+  $('reportBox').style.display='block';
+}
+function monthlySummary(){
+  const daily=entries.filter(x=>!x.summary);
+  const months={};
+  daily.forEach(x=>{
+    const key=x.date.slice(0,7);
+    if(!months[key])months[key]={s:0,m:0,e:0};
+    months[key].s+=Number(x.sales||0);
+    months[key].m+=Number(x.mydeen||0);
+    months[key].e+=Number(x.expense||0);
+  });
+  const keys=Object.keys(months).sort();
+  $('monthRows').innerHTML=keys.length?keys.map(k=>{
+    const v=months[k],p=v.s-v.m-v.e,margin=v.s?(p/v.s*100):0;
+    const [y,mo]=k.split('-');
+    const name=new Date(Number(y),Number(mo)-1,1).toLocaleString('en-IN',{month:'short',year:'numeric'});
+    return `<tr><td style="text-align:left">${name}</td><td>${money(v.s)}</td><td>${money(v.m)}</td><td>${money(v.e)}</td><td class="green">${money(p)}</td><td>${margin.toFixed(2)}%</td></tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty">Monthly data இல்லை</td></tr>';
+}
+$('reportBtn').onclick=reportCalc;
+$('fromDate').value='2026-08-12';
+$('toDate').value=today();
+
 $('backup').onclick=()=>{
   const data={
     app:"Mass Sales Ledger",
-    version:"1.3.0",
+    version:"1.4.0",
     exportedAt:new Date().toISOString(),
     entries:entries
   };
@@ -170,6 +247,6 @@ $('restoreFile').onchange=async ev=>{
   ev.target.value='';
 };
 
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=1.3.0');
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 render();
 </script></body></html>
