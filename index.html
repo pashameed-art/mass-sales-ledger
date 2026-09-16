@@ -48,12 +48,23 @@ input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <div class="actions"><button class="btn light" id="export">⬇️ Export CSV</button><button class="btn danger" id="clear">🗑️ Clear All</button></div>
 </section>
 
+
+<section class="card">
+<h3>💾 Backup / Restore</h3>
+<p class="note">Backup உங்கள் entries-ஐ ஒரு JSON file ஆக save செய்யும். Restore மூலம் அந்த file-ஐ மீண்டும் app-ல் ஏற்றலாம்.</p>
+<div class="actions">
+<button class="btn light" id="backup">⬇️ Backup Data</button>
+<button class="btn light" id="restoreBtn">⬆️ Restore Data</button>
+<input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
+</div>
+</section>
+
 <section class="card">
 <h3>📋 Entries</h3>
 <input id="search" placeholder="Search date...">
 <div class="tablewrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Mydeen</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
-<div class="version">Mass Sales Ledger • Version 1.2.0</div>
+<div class="version">Mass Sales Ledger • Version 1.3.0</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -109,6 +120,48 @@ $('export').onclick=()=>{
  let csv='Date,Sales,Purchase Mydeen,Expense,Profit\n'+entries.map(x=>`${x.date},${x.sales},${x.mydeen},${x.expense},${x.profit}`).join('\n');
  let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='mass-sales-ledger.csv';a.click();
 };
+
+$('backup').onclick=()=>{
+  const data={
+    app:"Mass Sales Ledger",
+    version:"1.3.0",
+    exportedAt:new Date().toISOString(),
+    entries:entries
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  const stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  a.href=url;a.download='mass-sales-ledger-backup-'+stamp+'.json';a.click();
+  URL.revokeObjectURL(url);
+};
+$('restoreBtn').onclick=()=>$('restoreFile').click();
+$('restoreFile').onchange=async ev=>{
+  const file=ev.target.files[0];
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    const restored=Array.isArray(data)?data:data.entries;
+    if(!Array.isArray(restored))throw new Error('Invalid backup');
+    const clean=restored.map((x,i)=>({
+      id:x.id||Date.now()+i,
+      date:String(x.date||''),
+      sales:Number(x.sales||0),
+      mydeen:Number(x.mydeen||0),
+      expense:Number(x.expense||0),
+      profit:Number(x.sales||0)-Number(x.mydeen||0)-Number(x.expense||0),
+      summary:!!x.summary
+    })).filter(x=>x.date);
+    if(!confirm('Backup data-ஐ restore செய்யவா? தற்போதைய app data replace ஆகும்.'))return;
+    entries=clean;
+    localStorage.setItem(KEY,JSON.stringify(entries));
+    render();
+    alert('Backup restored successfully.');
+  }catch(e){alert('Backup file சரியாக இல்லை.');}
+  ev.target.value='';
+};
+
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 render();
 </script></body></html>
