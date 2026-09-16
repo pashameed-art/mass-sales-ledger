@@ -1,9 +1,9 @@
 {
-  "name":"Mass Sales Ledger",
-  "short_name":"Sales Ledger",
-  "start_url":"./",
-  "display":"standalone",
-  "background_color":"#f1f5f9",
-  "theme_color":"#0f172a",
-  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "name": "Mass Sales Ledger",
+  "short_name": "Mass Ledger",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#111827",
+  "icons": []
 }

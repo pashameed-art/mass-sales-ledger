@@ -1,289 +1,289 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111827">
 <title>Mass Sales Ledger</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-header{background:#0f172a;color:#fff;padding:18px 16px}.wrap{max-width:920px;margin:auto;padding:14px}header .wrap{padding:0}h1{margin:0;font-size:23px}.sub{font-size:12px;opacity:.8;margin-top:4px}
-.card{background:#fff;border-radius:17px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px #0000000d}h2,h3{margin-top:0}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}
-input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px}input[readonly]{background:#f8fafc}
-.btn{border:0;border-radius:10px;padding:12px 15px;font-weight:700;font-size:14px;cursor:pointer}.primary{background:#0f172a;color:#fff}.light{background:#e2e8f0}.danger{background:#fee2e2;color:#b91c1c}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.note{font-size:12px;color:#64748b;line-height:1.5}
-.totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.total{background:#f8fafc;border-radius:12px;padding:12px}.total small{display:block;color:#64748b;font-size:11px}.total strong{font-size:18px}.green{color:#047857}.orange{color:#b45309}
-.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:9px 7px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px}th{font-size:11px;color:#64748b}th:first-child,td:first-child{text-align:left}
-.empty{text-align:center!important;padding:25px;color:#64748b}.version{text-align:center;color:#64748b;font-size:10px;padding:5px}
-@media(max-width:700px){.totals{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid{grid-template-columns:1fr 1fr}h1{font-size:21px}}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f3f4f6;color:#111827}
+.container{max-width:900px;margin:auto;padding:16px}.header{background:#111827;color:#fff;padding:18px;border-radius:14px;margin-bottom:14px}
+h1{margin:0;font-size:23px}.version{opacity:.75;font-size:12px;margin-top:4px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #00000010}
+h2{font-size:18px;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+label{font-size:13px;font-weight:700}input{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;margin-top:5px;font-size:16px}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;margin:5px 5px 0 0}
+.primary{background:#111827;color:white}.expenseBtn{background:#b45309;color:white}.secondary{background:#e5e7eb}.danger{background:#dc2626;color:white}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:#f9fafb;border-radius:10px;padding:11px}.stat b{display:block;font-size:12px;color:#6b7280}.stat span{font-size:18px;font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;border-bottom:1px solid #e5e7eb;text-align:right}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+.small{font-size:12px;color:#6b7280}.reportgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.reportitem{background:#f9fafb;padding:10px;border-radius:9px}.reportitem b{display:block;font-size:11px;color:#6b7280}.reportitem span{font-weight:800}
+.actions{white-space:nowrap}
+@media(max-width:650px){.grid,.stats,.reportgrid{grid-template-columns:1fr 1fr}table{font-size:11px}.actions button{padding:7px 8px}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><h1>📊 Mass Sales Ledger</h1><div class="sub">Sales • Purchase (Mydeen) • Expense • Profit • Total</div></div></header>
-<main class="wrap">
-<section class="card">
-<h3>➕ Add / Edit Entry</h3>
-<div class="grid">
-<div class="field"><label>Date</label><input id="date" type="date"></div>
-<div class="field"><label>Sales (₹)</label><input id="sales" type="number" min="0" step="1" inputmode="numeric"></div>
-<div class="field"><label>Purchase – Mydeen (₹)</label><input id="mydeen" type="number" min="0" step="1" inputmode="numeric"></div>
-<div class="field"><label>Expense (₹)</label><input id="expense" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
-<div class="field"><label>Profit (Auto)</label><input id="profit" type="number" readonly value="0"></div>
-</div>
-<div class="actions"><button class="btn primary" id="save">Save Entry</button><button class="btn light" id="cancel" style="display:none">Cancel Edit</button></div>
-<p class="note">Profit = Sales − Purchase (Mydeen) − Expense. Data is saved on this device and works offline.</p>
-</section>
+<div class="container">
+  <div class="header">
+    <h1>Mass Sales Ledger</h1>
+    <div class="version">Version 1.6.0 — Separate Expense Entry</div>
+  </div>
 
-<section class="card">
-<h3>📌 Total</h3>
-<div class="totals">
-<div class="total"><small>Sales</small><strong id="ts">₹0</strong></div>
-<div class="total"><small>Purchase (Mydeen)</small><strong id="tm">₹0</strong></div>
-<div class="total"><small>Expense</small><strong id="te" class="orange">₹0</strong></div>
-<div class="total"><small>Net Profit</small><strong id="tp" class="green">₹0</strong></div>
-<div class="total"><small>Entries</small><strong id="tc">0</strong></div>
-</div>
-<div class="actions"><button class="btn light" id="export">⬇️ Export CSV</button><button class="btn danger" id="clear">🗑️ Clear All</button></div>
-</section>
+  <div class="card">
+    <h2>Sales / Purchase Entry</h2>
+    <div class="grid">
+      <div><label>Date</label><input type="date" id="saleDate"></div>
+      <div><label>Sales (₹)</label><input type="number" id="sales" min="0" step="0.01" placeholder="0"></div>
+      <div><label>Purchase (Mydeen) (₹)</label><input type="number" id="purchase" min="0" step="0.01" placeholder="0"></div>
+      <div><label>Profit (Auto)</label><input type="text" id="saleProfit" readonly></div>
+    </div>
+    <button class="primary" onclick="saveSale()">Save Sales Entry</button>
+    <button class="secondary" onclick="clearSale()">Clear</button>
+  </div>
 
+  <div class="card">
+    <h2>Expense Entry</h2>
+    <div class="grid">
+      <div><label>Date</label><input type="date" id="expenseDate"></div>
+      <div><label>Expense Amount (₹)</label><input type="number" id="expenseAmount" min="0" step="0.01" placeholder="0"></div>
+    </div>
+    <button class="expenseBtn" onclick="saveExpense()">Save Expense</button>
+    <button class="secondary" onclick="clearExpense()">Clear</button>
+    <div class="small" style="margin-top:8px">Expense is recorded separately from Sales / Purchase.</div>
+  </div>
 
+  <div class="card">
+    <h2>Overall Total</h2>
+    <div class="stats">
+      <div class="stat"><b>Sales</b><span id="totalSales">₹0</span></div>
+      <div class="stat"><b>Purchase</b><span id="totalPurchase">₹0</span></div>
+      <div class="stat"><b>Expense</b><span id="totalExpense">₹0</span></div>
+      <div class="stat"><b>Net Profit</b><span id="netProfit">₹0</span></div>
+    </div>
+  </div>
 
-<section class="card">
-<h3>📊 Date Range Report</h3>
-<div class="grid">
-<div class="field"><label>From Date</label><input id="fromDate" type="date"></div>
-<div class="field"><label>To Date</label><input id="toDate" type="date"></div>
-</div>
-<div class="actions"><button class="btn primary" id="reportBtn">Show Report</button></div>
-<div id="reportBox" style="display:none;margin-top:12px">
-<div class="totals">
-<div class="total"><small>Sales</small><strong id="rs">₹0</strong></div>
-<div class="total"><small>Purchase</small><strong id="rm">₹0</strong></div>
-<div class="total"><small>Expense</small><strong id="re" class="orange">₹0</strong></div>
-<div class="total"><small>Net Profit</small><strong id="rp" class="green">₹0</strong></div>
-<div class="total"><small>Profit Margin</small><strong id="rmargin" class="green">0%</strong></div>
-</div>
-<p class="note" id="reportLabel"></p>
-</div>
-</section>
+  <div class="card">
+    <h2>Date-wise Daily Summary</h2>
+    <div><label>Select Date</label><input type="date" id="dailyDate" onchange="dailySummary()"></div>
+    <div class="reportgrid">
+      <div class="reportitem"><b>Sales</b><span id="dSales">₹0</span></div>
+      <div class="reportitem"><b>Purchase</b><span id="dPurchase">₹0</span></div>
+      <div class="reportitem"><b>Expense</b><span id="dExpense">₹0</span></div>
+      <div class="reportitem"><b>Net Profit</b><span id="dProfit">₹0</span></div>
+    </div>
+  </div>
 
+  <div class="card">
+    <h2>Date Range Report</h2>
+    <div class="grid">
+      <div><label>From Date</label><input type="date" id="fromDate"></div>
+      <div><label>To Date</label><input type="date" id="toDate"></div>
+    </div>
+    <button class="primary" onclick="rangeReport()">Generate Report</button>
+    <div class="reportgrid">
+      <div class="reportitem"><b>Sales</b><span id="rSales">₹0</span></div>
+      <div class="reportitem"><b>Purchase</b><span id="rPurchase">₹0</span></div>
+      <div class="reportitem"><b>Expense</b><span id="rExpense">₹0</span></div>
+      <div class="reportitem"><b>Net Profit</b><span id="rProfit">₹0</span></div>
+    </div>
+  </div>
 
-<section class="card">
-<h3>📅 Date-wise Daily Summary</h3>
-<div class="grid">
-<div class="field"><label>Select Date</label><input id="dailyDate" type="date"></div>
-</div>
-<div class="actions"><button class="btn primary" id="dailyBtn">Show Daily Summary</button></div>
-<div id="dailyBox" style="display:none;margin-top:12px">
-<div class="totals">
-<div class="total"><small>Sales</small><strong id="ds">₹0</strong></div>
-<div class="total"><small>Purchase</small><strong id="dm">₹0</strong></div>
-<div class="total"><small>Expense</small><strong id="de" class="orange">₹0</strong></div>
-<div class="total"><small>Profit</small><strong id="dp" class="green">₹0</strong></div>
-</div>
-<p class="note" id="dailyLabel"></p>
-</div>
-</section>
+  <div class="card">
+    <h2>Monthly Summary</h2>
+    <div><label>Select Month</label><input type="month" id="monthSelect" onchange="monthlySummary()"></div>
+    <div class="reportgrid">
+      <div class="reportitem"><b>Sales</b><span id="mSales">₹0</span></div>
+      <div class="reportitem"><b>Purchase</b><span id="mPurchase">₹0</span></div>
+      <div class="reportitem"><b>Expense</b><span id="mExpense">₹0</span></div>
+      <div class="reportitem"><b>Net Profit</b><span id="mProfit">₹0</span></div>
+    </div>
+  </div>
 
-<section class="card">
-<h3>📅 Monthly Summary</h3>
-<div class="tablewrap">
-<table style="min-width:620px">
-<thead><tr><th>Month</th><th>Sales</th><th>Purchase</th><th>Expense</th><th>Net Profit</th><th>Margin</th></tr></thead>
-<tbody id="monthRows"></tbody>
-</table>
-</div>
-<p class="note">The 12.08–09.09 cumulative opening amount is kept separately so it is not incorrectly allocated to a single calendar month.</p>
-</section>
+  <div class="card">
+    <h2>Entries</h2>
+    <div class="small" style="margin-bottom:8px">Sales entries and separate expense entries are shown below.</div>
+    <div style="overflow:auto">
+    <table>
+      <thead><tr><th>Date</th><th>Type</th><th>Sales</th><th>Purchase</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead>
+      <tbody id="entriesBody"></tbody>
+    </table>
+    </div>
+  </div>
 
-<section class="card">
-<h3>💾 Backup / Restore</h3>
-<p class="note">Backup உங்கள் entries-ஐ ஒரு JSON file ஆக save செய்யும். Restore மூலம் அந்த file-ஐ மீண்டும் app-ல் ஏற்றலாம்.</p>
-<div class="actions">
-<button class="btn light" id="backup">⬇️ Backup Data</button>
-<button class="btn light" id="restoreBtn">⬆️ Restore Data</button>
-<input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
+  <div class="card">
+    <h2>Backup / Restore</h2>
+    <button class="primary" onclick="downloadBackup()">Download Backup</button>
+    <input type="file" id="restoreFile" accept=".json" onchange="restoreBackup(event)">
+    <button class="secondary" onclick="exportCSV()">Export CSV</button>
+  </div>
 </div>
-</section>
 
-<section class="card">
-<h3>📋 Entries</h3>
-<input id="search" placeholder="Search date...">
-<div class="tablewrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Mydeen</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
-</section>
-<div class="version">Mass Sales Ledger • Version 1.5.0</div>
-</main>
 <script>
-const $=id=>document.getElementById(id);
-const KEY='mass_sales_ledger_v1_5';
-let entries=JSON.parse(localStorage.getItem(KEY)||'null');
-let editId=null;
-if(!entries){
- const old=JSON.parse(localStorage.getItem('mass_sales_ledger_v1_4')||'null');
- if(Array.isArray(old)){
-  entries=old.map(x=>({...x,expense:Number(x.expense||0),profit:Number(x.sales||0)-Number(x.mydeen||0)-Number(x.expense||0)}));
-  localStorage.setItem(KEY,JSON.stringify(entries));
- }
-}
+const KEY='mass_sales_ledger_v1_6';
+const OLD_KEYS=['mass_sales_ledger_v1_5','mass_sales_ledger_v1_4','mass_sales_ledger_v1_3','mass_sales_ledger_v1_2'];
+let entries=JSON.parse(localStorage.getItem(KEY)||'null')||[];
+let editingId=null;
 
-if(!entries){
- entries=[
-  {id:1,date:'2026-09-09',sales:202775,mydeen:113086,expense:0,profit:89689,summary:true,periodStart:'2026-08-12',periodEnd:'2026-09-09'},
-  {id:2,date:'2026-09-10',sales:25050,mydeen:16041,expense:0,profit:9009},
-  {id:3,date:'2026-09-11',sales:23800,mydeen:13861,expense:0,profit:9939},
-  {id:4,date:'2026-09-12',sales:3300,mydeen:1785,expense:0,profit:1515},
-  {id:5,date:'2026-09-13',sales:6800,mydeen:3465,expense:0,profit:3335},
-  {id:6,date:'2026-09-14',sales:5100,mydeen:2400,expense:0,profit:2700},
-  {id:7,date:'2026-09-14',sales:2000,mydeen:990,expense:0,profit:1010},
-  {id:8,date:'2026-09-15',sales:20900,mydeen:10170,expense:0,profit:10730},
-  {id:9,date:'2026-09-16',sales:16690,mydeen:6885,expense:0,profit:9805}
- ];
- localStorage.setItem(KEY,JSON.stringify(entries));
+function today(){return new Date().toISOString().slice(0,10)}
+function money(n){return '₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
+function num(id){return Number(document.getElementById(id).value||0)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function persist(){localStorage.setItem(KEY,JSON.stringify(entries));render()}
+function normalizeEntry(e){
+  const x={...e};
+  x.id=x.id||uid(); x.date=x.date||today(); x.type=x.type||'sale';
+  x.sales=Number(x.sales||0); x.purchase=Number(x.purchase||0);
+  x.expense=Number(x.expense||0); x.summary=!!x.summary;
+  return x;
 }
-function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
-function today(){let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
-$('date').value=today();
-function calc(){let s=+$('sales').value||0,m=+$('mydeen').value||0,e=+$('expense').value||0;$('profit').value=s-m-e}
-$('sales').oninput=calc;$('mydeen').oninput=calc;$('expense').oninput=calc;
-function reset(){ $('date').value=today();$('sales').value='';$('mydeen').value='';$('expense').value=0;$('profit').value=0;editId=null;$('save').textContent='Save Entry';$('cancel').style.display='none'}
-$('save').onclick=()=>{
- let date=$('date').value,s=+$('sales').value||0,m=+$('mydeen').value||0,e=+$('expense').value||0;
- if(!date){alert('Date select செய்யவும்');return}
- let x={id:editId||Date.now(),date,sales:s,mydeen:m,expense:e,profit:s-m-e};
- if(editId)entries=entries.map(a=>a.id===editId?x:a);else entries.push(x);
- localStorage.setItem(KEY,JSON.stringify(entries));reset();render();
-};
-$('cancel').onclick=reset;
-window.editEntry=id=>{
- let x=entries.find(a=>a.id===id);if(!x)return;
- editId=id;$('date').value=x.date;$('sales').value=x.sales;$('mydeen').value=x.mydeen;$('expense').value=x.expense||0;$('profit').value=x.profit;
- $('save').textContent='Update Entry';$('cancel').style.display='inline-block';scrollTo({top:0,behavior:'smooth'});
-};
-window.deleteEntry=id=>{
- if(confirm('இந்த entry-ஐ delete செய்யவா?')){entries=entries.filter(a=>a.id!==id);localStorage.setItem(KEY,JSON.stringify(entries));render()}
-};
-function render(){
- let q=$('search').value.toLowerCase();
- let list=entries.filter(x=>x.date.includes(q)).sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
- $('rows').innerHTML=list.length?list.map(x=>`<tr><td>${x.summary?'12.08–09.09':x.date.split('-').reverse().join('.')}</td><td>${money(x.sales)}</td><td>${money(x.mydeen)}</td><td>${money(x.expense)}</td><td class="green">${money(x.profit)}</td><td><button class="btn light" onclick="editEntry(${x.id})">Edit</button> <button class="btn danger" onclick="deleteEntry(${x.id})">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Entries இல்லை</td></tr>';
- let s=entries.reduce((a,x)=>a+x.sales,0),m=entries.reduce((a,x)=>a+x.mydeen,0),e=entries.reduce((a,x)=>a+x.expense,0);
- $('ts').textContent=money(s);$('tm').textContent=money(m);$('te').textContent=money(e);$('tp').textContent=money(s-m-e);$('tc').textContent=entries.length;
- monthlySummary();
-}
-$('search').oninput=render;
-$('clear').onclick=()=>{if(confirm('அனைத்து entries-ஐயும் delete செய்யவா?')){entries=[];localStorage.setItem(KEY,'[]');render()}};
-$('export').onclick=()=>{
- let csv='Date,Sales,Purchase Mydeen,Expense,Profit\n'+entries.map(x=>`${x.date},${x.sales},${x.mydeen},${x.expense},${x.profit}`).join('\n');
- let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='mass-sales-ledger.csv';a.click();
-};
-
-
-function inReportRange(x, from, to){
-  if(x.summary){
-    const a=x.periodStart||x.date, b=x.periodEnd||x.date;
-    return a<=to && b>=from;
+function migrate(){
+  if(entries.length) return;
+  for(const k of OLD_KEYS){
+    const raw=localStorage.getItem(k);
+    if(!raw) continue;
+    try{
+      const old=JSON.parse(raw);
+      const arr=Array.isArray(old)?old:(old.entries||[]);
+      const migrated=[];
+      arr.forEach(e=>{
+        const x=normalizeEntry(e);
+        if(x.expense>0){
+          migrated.push({id:uid(),date:x.date,type:'expense',sales:0,purchase:0,expense:x.expense,summary:false});
+        }
+        x.expense=0; x.type='sale';
+        migrated.push(x);
+      });
+      entries=migrated;
+      localStorage.setItem(KEY,JSON.stringify(entries));
+      return;
+    }catch(err){}
   }
-  return x.date>=from && x.date<=to;
 }
-
-function dailyCalc(){
-  const d=$('dailyDate').value;
-  if(!d){alert('Date select செய்யவும்');return}
-  const list=entries.filter(x=>!x.summary && x.date===d);
-  const s=list.reduce((a,x)=>a+Number(x.sales||0),0);
-  const m=list.reduce((a,x)=>a+Number(x.mydeen||0),0);
-  const e=list.reduce((a,x)=>a+Number(x.expense||0),0);
-  const p=s-m-e;
-  $('ds').textContent=money(s);
-  $('dm').textContent=money(m);
-  $('de').textContent=money(e);
-  $('dp').textContent=money(p);
-  $('dailyLabel').textContent=`${d.split('-').reverse().join('.')} • ${list.length} entry(ies)`;
-  $('dailyBox').style.display='block';
+function saveSale(){
+  const date=document.getElementById('saleDate').value||today();
+  const sales=num('sales'), purchase=num('purchase');
+  if(sales<=0 && purchase<=0){alert('Enter Sales or Purchase amount.');return}
+  if(editingId){
+    const e=entries.find(x=>x.id===editingId);
+    if(e){e.date=date;e.sales=sales;e.purchase=purchase;e.type='sale';}
+    editingId=null;
+  }else entries.push({id:uid(),date,type:'sale',sales,purchase,expense:0,summary:false});
+  clearSale();persist();
 }
-$('dailyDate').value=today();
-$('dailyBtn').onclick=dailyCalc;
+function saveExpense(){
+  const date=document.getElementById('expenseDate').value||today();
+  const expense=num('expenseAmount');
+  if(expense<=0){alert('Enter Expense Amount.');return}
+  if(editingId){
+    const e=entries.find(x=>x.id===editingId);
+    if(e && e.type==='expense'){e.date=date;e.expense=expense;}
+    editingId=null;
+  }else entries.push({id:uid(),date,type:'expense',sales:0,purchase:0,expense,summary:false});
+  clearExpense();persist();
+}
+function clearSale(){editingId=null;document.getElementById('saleDate').value=today();document.getElementById('sales').value='';document.getElementById('purchase').value='';document.getElementById('saleProfit').value='';}
+function clearExpense(){editingId=null;document.getElementById('expenseDate').value=today();document.getElementById('expenseAmount').value='';}
+function editEntry(id){
+  const e=entries.find(x=>x.id===id); if(!e || e.summary)return;
+  editingId=id;
+  if(e.type==='expense'){
+    document.getElementById('expenseDate').value=e.date;
+    document.getElementById('expenseAmount').value=e.expense;
+    document.getElementById('expenseAmount').focus();
+  }else{
+    document.getElementById('saleDate').value=e.date;
+    document.getElementById('sales').value=e.sales;
+    document.getElementById('purchase').value=e.purchase;
+    updateSaleProfit(); document.getElementById('sales').focus();
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteEntry(id){
+  const e=entries.find(x=>x.id===id); if(!e || e.summary)return;
+  if(confirm('Delete this entry?')){entries=entries.filter(x=>x.id!==id);persist();}
+}
+function updateSaleProfit(){document.getElementById('saleProfit').value=money(num('sales')-num('purchase'))}
+document.getElementById('sales').addEventListener('input',updateSaleProfit);
+document.getElementById('purchase').addEventListener('input',updateSaleProfit);
 
-function reportCalc(){
-  let from=$('fromDate').value, to=$('toDate').value;
-  if(!from||!to){alert('From Date மற்றும் To Date select செய்யவும்');return}
-  if(from>to){alert('From Date, To Date-க்கு முன்னதாக இருக்க வேண்டும்');return}
-  const list=entries.filter(x=>inReportRange(x,from,to));
-  let s=list.reduce((a,x)=>a+Number(x.sales||0),0);
-  let m=list.reduce((a,x)=>a+Number(x.mydeen||0),0);
-  let e=list.reduce((a,x)=>a+Number(x.expense||0),0);
-  let p=s-m-e;
-  let margin=s?((p/s)*100):0;
-  $('rs').textContent=money(s);$('rm').textContent=money(m);$('re').textContent=money(e);$('rp').textContent=money(p);
-  $('rmargin').textContent=margin.toFixed(2)+'%';
-  $('reportLabel').textContent=`${from.split('-').reverse().join('.')} → ${to.split('-').reverse().join('.')} • ${list.length} record(s) included`;
-  $('reportBox').style.display='block';
+function calc(){
+  let sales=0,purchase=0,expense=0;
+  entries.forEach(e=>{if(e.type==='expense')expense+=e.expense;else{sales+=e.sales;purchase+=e.purchase;}});
+  return {sales,purchase,expense,profit:sales-purchase-expense};
+}
+function render(){
+  const t=calc();
+  document.getElementById('totalSales').textContent=money(t.sales);
+  document.getElementById('totalPurchase').textContent=money(t.purchase);
+  document.getElementById('totalExpense').textContent=money(t.expense);
+  document.getElementById('netProfit').textContent=money(t.profit);
+  const body=document.getElementById('entriesBody');
+  body.innerHTML='';
+  [...entries].sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id))).forEach(e=>{
+    const tr=document.createElement('tr');
+    const profit=e.type==='expense'?-e.expense:e.sales-e.purchase;
+    tr.innerHTML=`<td>${e.date}</td><td>${e.type==='expense'?'Expense':'Sales'}</td><td>${money(e.sales)}</td><td>${money(e.purchase)}</td><td>${money(e.expense)}</td><td>${money(profit)}</td><td class="actions">${e.summary?'<span class="small">Opening/Cumulative</span>':`<button class="secondary" onclick="editEntry('${e.id}')">Edit</button><button class="danger" onclick="deleteEntry('${e.id}')">Delete</button>`}</td>`;
+    body.appendChild(tr);
+  });
+  dailySummary(); rangeReport(); monthlySummary();
+}
+function dailySummary(){
+  const d=document.getElementById('dailyDate').value;if(!d)return;
+  let s=0,p=0,x=0;
+  entries.forEach(e=>{if(e.date===d && !e.summary){if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}}});
+  document.getElementById('dSales').textContent=money(s);document.getElementById('dPurchase').textContent=money(p);document.getElementById('dExpense').textContent=money(x);document.getElementById('dProfit').textContent=money(s-p-x);
+}
+function rangeReport(){
+  const f=document.getElementById('fromDate').value,t=document.getElementById('toDate').value;
+  if(!f||!t)return;
+  let s=0,p=0,x=0;
+  entries.forEach(e=>{
+    if(e.type==='expense'){if(e.date>=f&&e.date<=t)x+=e.expense;return}
+    if(e.summary){
+      const a=e.periodStart||e.date,b=e.periodEnd||e.date;
+      if(a<=t&&b>=f){s+=e.sales;p+=e.purchase;}
+    }else if(e.date>=f&&e.date<=t){s+=e.sales;p+=e.purchase;}
+  });
+  document.getElementById('rSales').textContent=money(s);document.getElementById('rPurchase').textContent=money(p);document.getElementById('rExpense').textContent=money(x);document.getElementById('rProfit').textContent=money(s-p-x);
 }
 function monthlySummary(){
-  const daily=entries.filter(x=>!x.summary);
-  const months={};
-  daily.forEach(x=>{
-    const key=x.date.slice(0,7);
-    if(!months[key])months[key]={s:0,m:0,e:0};
-    months[key].s+=Number(x.sales||0);
-    months[key].m+=Number(x.mydeen||0);
-    months[key].e+=Number(x.expense||0);
-  });
-  const keys=Object.keys(months).sort();
-  $('monthRows').innerHTML=keys.length?keys.map(k=>{
-    const v=months[k],p=v.s-v.m-v.e,margin=v.s?(p/v.s*100):0;
-    const [y,mo]=k.split('-');
-    const name=new Date(Number(y),Number(mo)-1,1).toLocaleString('en-IN',{month:'short',year:'numeric'});
-    return `<tr><td style="text-align:left">${name}</td><td>${money(v.s)}</td><td>${money(v.m)}</td><td>${money(v.e)}</td><td class="green">${money(p)}</td><td>${margin.toFixed(2)}%</td></tr>`;
-  }).join(''):'<tr><td colspan="6" class="empty">Monthly data இல்லை</td></tr>';
+  const m=document.getElementById('monthSelect').value;if(!m)return;
+  let s=0,p=0,x=0;
+  entries.forEach(e=>{if(e.summary)return;if(e.date.slice(0,7)!==m)return;if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}});
+  document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
 }
-$('reportBtn').onclick=reportCalc;
-$('fromDate').value='2026-08-12';
-$('toDate').value=today();
-
-$('backup').onclick=()=>{
-  const data={
-    app:"Mass Sales Ledger",
-    version:"1.5.0",
-    exportedAt:new Date().toISOString(),
-    entries:entries
-  };
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  const d=new Date();
-  const stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  a.href=url;a.download='mass-sales-ledger-backup-'+stamp+'.json';a.click();
-  URL.revokeObjectURL(url);
-};
-$('restoreBtn').onclick=()=>$('restoreFile').click();
-$('restoreFile').onchange=async ev=>{
-  const file=ev.target.files[0];
-  if(!file)return;
-  try{
-    const data=JSON.parse(await file.text());
-    const restored=Array.isArray(data)?data:data.entries;
-    if(!Array.isArray(restored))throw new Error('Invalid backup');
-    const clean=restored.map((x,i)=>({
-      id:x.id||Date.now()+i,
-      date:String(x.date||''),
-      sales:Number(x.sales||0),
-      mydeen:Number(x.mydeen||0),
-      expense:Number(x.expense||0),
-      profit:Number(x.sales||0)-Number(x.mydeen||0)-Number(x.expense||0),
-      summary:!!x.summary
-    })).filter(x=>x.date);
-    if(!confirm('Backup data-ஐ restore செய்யவா? தற்போதைய app data replace ஆகும்.'))return;
-    entries=clean;
-    localStorage.setItem(KEY,JSON.stringify(entries));
-    render();
-    alert('Backup restored successfully.');
-  }catch(e){alert('Backup file சரியாக இல்லை.');}
-  ev.target.value='';
-};
-
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
-render();
-</script></body></html>
+function downloadBackup(){
+  const blob=new Blob([JSON.stringify({app:'Mass Sales Ledger',version:'1.6.0',exportedAt:new Date().toISOString(),entries},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-backup-v1.6.json';a.click();URL.revokeObjectURL(a.href);
+}
+function restoreBackup(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const obj=JSON.parse(r.result);const arr=Array.isArray(obj)?obj:obj.entries;
+    if(!Array.isArray(arr))throw Error();
+    entries=arr.map(normalizeEntry);localStorage.setItem(KEY,JSON.stringify(entries));render();alert('Backup restored successfully.');
+  }catch(e){alert('Invalid backup file.');}};
+  r.readAsText(file);
+}
+function exportCSV(){
+  const rows=[['Date','Type','Sales','Purchase (Mydeen)','Expense','Profit']];
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>rows.push([e.date,e.type==='expense'?'Expense':'Sales',e.sales,e.purchase,e.expense,e.type==='expense'?-e.expense:e.sales-e.purchase]));
+  const csv=rows.map(r=>r.join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function init(){
+  migrate();
+  const d=today();
+  document.getElementById('saleDate').value=d;document.getElementById('expenseDate').value=d;document.getElementById('dailyDate').value=d;
+  document.getElementById('fromDate').value=entries.length?entries.reduce((m,e)=>e.date<m?e.date:m,d):d;
+  document.getElementById('toDate').value=d;
+  document.getElementById('monthSelect').value=d.slice(0,7);
+  render();
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+}
+init();
+</script>
+</body>
+</html>
