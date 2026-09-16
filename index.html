@@ -15,7 +15,8 @@
 <section class="card">
 <h3 style="margin-top:0">➕ Add / Edit Entry</h3>
 <div class="grid">
-<div class="field"><label>Date</label><input id="date" type="date"></div>
+<div class="field"><label>Date</label>
+<label>Expense<input id="expense" type="number" min="0" step="0.01" value="0"></label><input id="date" type="date"></div>
 <div class="field"><label>Sales (₹)</label><input id="sales" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
 <div class="field"><label>Purchase – Mydeen (₹)</label><input id="mydeen" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
 <div class="field"><label>Profit (Auto)</label><input id="profit" type="number" readonly value="0"></div>
@@ -29,7 +30,7 @@
 <div class="actions"><button id="export" class="btn light">⬇️ Export CSV</button><button id="clear" class="btn danger">🗑️ Clear All</button></div>
 </section>
 <section class="card"><h3 style="margin-top:0">📋 Entries</h3><div class="search"><input id="search" placeholder="Search date..."></div><div class="tablewrap"><table><thead><tr><th>Date</th><th>Sales</th><th>Mydeen</th><th>Profit</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div></section>
-<div class="version">Mass Sales Ledger • Version 1.0.0</div>
+<div class="version">Mass Sales Ledger • Version 1.1.0</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);const KEY='mass_sales_ledger_v1';let entries=JSON.parse(localStorage.getItem(KEY)||'[]');let editId=null;
