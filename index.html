@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 1.6.0 — Separate Expense Entry</div>
+    <div class="version">Version 1.6.0 — Separate Expense Entry + Data</div>
   </div>
 
   <div class="card">
@@ -123,6 +123,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 const KEY='mass_sales_ledger_v1_6';
 const OLD_KEYS=['mass_sales_ledger_v1_5','mass_sales_ledger_v1_4','mass_sales_ledger_v1_3','mass_sales_ledger_v1_2'];
 let entries=JSON.parse(localStorage.getItem(KEY)||'null')||[];
+const INITIAL_DATA=[{"id":"opening-20260812-20260909","date":"2026-09-09","type":"sale","sales":202775,"purchase":113086,"expense":0,"summary":true,"periodStart":"2026-08-12","periodEnd":"2026-09-09"},{"id":"sale-20260910","date":"2026-09-10","type":"sale","sales":25050,"purchase":16041,"expense":0,"summary":false},{"id":"sale-20260911","date":"2026-09-11","type":"sale","sales":23800,"purchase":13861,"expense":0,"summary":false},{"id":"sale-20260912","date":"2026-09-12","type":"sale","sales":3300,"purchase":1785,"expense":0,"summary":false},{"id":"sale-20260913","date":"2026-09-13","type":"sale","sales":6800,"purchase":3465,"expense":0,"summary":false},{"id":"sale-20260914-a","date":"2026-09-14","type":"sale","sales":5100,"purchase":2400,"expense":0,"summary":false},{"id":"sale-20260914-b","date":"2026-09-14","type":"sale","sales":2000,"purchase":990,"expense":0,"summary":false},{"id":"sale-20260915","date":"2026-09-15","type":"sale","sales":20900,"purchase":10170,"expense":0,"summary":false},{"id":"sale-20260916","date":"2026-09-16","type":"sale","sales":16690,"purchase":6885,"expense":0,"summary":false}];
 let editingId=null;
 
 function today(){return new Date().toISOString().slice(0,10)}
@@ -275,6 +276,10 @@ function exportCSV(){
 }
 function init(){
   migrate();
+  if(!entries.length){
+    entries=INITIAL_DATA.map(x=>({...x}));
+    localStorage.setItem(KEY,JSON.stringify(entries));
+  }
   const d=today();
   document.getElementById('saleDate').value=d;document.getElementById('expenseDate').value=d;document.getElementById('dailyDate').value=d;
   document.getElementById('fromDate').value=entries.length?entries.reduce((m,e)=>e.date<m?e.date:m,d):d;
