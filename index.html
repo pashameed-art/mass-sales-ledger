@@ -24,10 +24,19 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 </style>
 </head>
 <body>
+<div id="pinLock" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,.98);z-index:99999;color:#fff;padding:24px;align-items:center;justify-content:center;box-sizing:border-box">
+  <div style="width:min(360px,100%);text-align:center">
+    <h2 style="margin-bottom:8px">Mass Sales Ledger</h2>
+    <div style="margin-bottom:18px;opacity:.85">App PIN is enabled</div>
+    <input id="unlockPin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Enter PIN" style="width:100%;box-sizing:border-box;padding:14px;border-radius:10px;border:0;font-size:22px;text-align:center">
+    <button class="primary" onclick="unlockApp()" style="width:100%;margin-top:12px">Unlock</button>
+    <div class="small" style="margin-top:12px;opacity:.7">PIN is optional and can be disabled after unlocking.</div>
+  </div>
+</div>
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.2.0 — Safe Auto Update + Protected Backup Fix</div>
+    <div class="version">Version 2.3.0 — Optional App PIN + Safe Auto Update</div>
   </div>
 
   <div class="card">
@@ -100,6 +109,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     </div>
   </div>
 
+  <div class="card" id="pinCard">
+    <h2>App PIN</h2>
+    <div class="small" id="pinStatus">PIN is OFF</div>
+    <button class="primary" id="setPinBtn" onclick="setOrChangePin()">Set App PIN</button>
+    <button class="secondary" id="disablePinBtn" onclick="disablePin()" style="display:none">Disable PIN</button>
+    <div class="small" style="margin-top:8px">Optional app lock. Your ledger data is not changed. PIN is stored as a hash on this device.</div>
+  </div>
+
   <div class="card">
     <h2>Entries</h2>
     <div class="grid" style="margin-bottom:8px">
@@ -121,7 +138,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
       </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;font-size:14px">
-      <input type="checkbox" id="hideZeroEntries" onchange="renderEntries()" style="width:auto;margin:0">
+      <input type="checkbox" id="hideZeroEntries" checked onchange="renderEntries()" style="width:auto;margin:0">
       Hide ₹0 / ₹0 empty entries
     </label>
     <div style="overflow:auto">
@@ -144,6 +161,66 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 
 <script>
 const KEY='mass_sales_ledger_v1_6';
+const PIN_KEY='mass_sales_ledger_app_pin_hash';
+
+async function hashPin(pin){
+  const data=new TextEncoder().encode(pin);
+  const hash=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function validPin(pin){ return /^\d{4,6}$/.test(pin); }
+function updatePinUI(){
+  const on=!!localStorage.getItem(PIN_KEY);
+  const status=document.getElementById('pinStatus');
+  const setBtn=document.getElementById('setPinBtn');
+  const disBtn=document.getElementById('disablePinBtn');
+  if(status) status.textContent=on?'PIN is ON':'PIN is OFF';
+  if(setBtn) setBtn.textContent=on?'Change App PIN':'Set App PIN';
+  if(disBtn) disBtn.style.display=on?'inline-block':'none';
+}
+async function setOrChangePin(){
+  const currentHash=localStorage.getItem(PIN_KEY);
+  if(currentHash){
+    const old=prompt('Enter current PIN:');
+    if(old===null)return;
+    if(await hashPin(old)!==currentHash){alert('Incorrect current PIN.');return;}
+  }
+  const pin=prompt('Set a 4–6 digit App PIN:');
+  if(pin===null)return;
+  if(!validPin(pin)){alert('PIN must contain 4–6 digits.');return;}
+  const confirmPin=prompt('Confirm App PIN:');
+  if(confirmPin!==pin){alert('PIN confirmation does not match.');return;}
+  localStorage.setItem(PIN_KEY,await hashPin(pin));
+  updatePinUI();
+  alert('App PIN enabled. Your ledger data was not changed.');
+}
+async function disablePin(){
+  const stored=localStorage.getItem(PIN_KEY);
+  if(!stored)return;
+  const pin=prompt('Enter current PIN to disable:');
+  if(pin===null)return;
+  if(await hashPin(pin)!==stored){alert('Incorrect PIN.');return;}
+  localStorage.removeItem(PIN_KEY);
+  updatePinUI();
+  alert('App PIN disabled. Your ledger data was not changed.');
+}
+async function unlockApp(){
+  const stored=localStorage.getItem(PIN_KEY);
+  if(!stored){document.getElementById('pinLock').style.display='none';return;}
+  const pin=document.getElementById('unlockPin').value;
+  if(await hashPin(pin)===stored){
+    sessionStorage.setItem('mass_ledger_unlocked','1');
+    document.getElementById('pinLock').style.display='none';
+    document.getElementById('unlockPin').value='';
+  }else{alert('Incorrect PIN.');}
+}
+function applyPinLock(){
+  updatePinUI();
+  if(localStorage.getItem(PIN_KEY) && sessionStorage.getItem('mass_ledger_unlocked')!=='1'){
+    document.getElementById('pinLock').style.display='flex';
+  }
+}
+
 
 const PROTECTED_BACKUP_KEY='mass_sales_ledger_protected_snapshot';
 const PROTECTED_VERSION='1.9.0';
@@ -451,6 +528,7 @@ function init(){
   document.getElementById('toDate').value=d;
   document.getElementById('monthSelect').value=d.slice(0,7);
   render();
+  applyPinLock();
   if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
     if(!sessionStorage.getItem('mass_ledger_sw_reloaded')){
@@ -458,7 +536,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.2.0').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.3.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
