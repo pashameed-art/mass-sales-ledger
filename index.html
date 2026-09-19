@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 1.9.0 — Data Protection</div>
+    <div class="version">Version 2.0.0 — Auto Update + Data Protection</div>
   </div>
 
   <div class="card">
@@ -435,7 +435,11 @@ function init(){
   document.getElementById('toDate').value=d;
   document.getElementById('monthSelect').value=d.slice(0,7);
   render();
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=2.0.0').then(reg=>{
+    reg.update();
+  }).catch(()=>{});
+}
 }
 init();
 </script>
