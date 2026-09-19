@@ -1,4 +1,4 @@
-const CACHE='mass-sales-ledger-v2.1.0';
+const CACHE='mass-sales-ledger-v2.2.0';
 const ASSETS=['./manifest.json'];
 
 self.addEventListener('install', event => {
@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(req, {cache:'no-store'})
         .then(response => {
-          const copy = response.clone();
+          const copy=response.clone();
           caches.open(CACHE).then(c => c.put('./index.html', copy));
           return response;
         })
@@ -32,7 +32,5 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  event.respondWith(
-    caches.match(req).then(cached => cached || fetch(req))
-  );
+  event.respondWith(caches.match(req).then(cached => cached || fetch(req)));
 });

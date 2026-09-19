@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.1.0 — Safe Auto Update + Data Protection</div>
+    <div class="version">Version 2.2.0 — Safe Auto Update + Protected Backup Fix</div>
   </div>
 
   <div class="card">
@@ -175,7 +175,9 @@ function protectedLoadEntries(){
   const current=safeParseLedger(currentRaw);
 
   // Existing data wins. Never overwrite a populated current store.
+  // Create a protected snapshot once, without modifying the ledger.
   if(Array.isArray(current) && current.length){
+    createProtectedSnapshot(KEY,current);
     return current;
   }
 
@@ -204,17 +206,31 @@ function protectedLoadEntries(){
 }
 
 function downloadProtectedSnapshot(){
-  const raw=localStorage.getItem(PROTECTED_BACKUP_KEY);
+  let raw=localStorage.getItem(PROTECTED_BACKUP_KEY);
+
+  // If no snapshot exists yet, create one from the CURRENT ledger.
+  // Never clear, replace, or delete the current data.
   if(!raw){
-    alert('No automatic protection snapshot exists yet.');
+    const currentRaw=localStorage.getItem(KEY);
+    const current=safeParseLedger(currentRaw);
+    if(Array.isArray(current) && current.length){
+      createProtectedSnapshot(KEY,current);
+      raw=localStorage.getItem(PROTECTED_BACKUP_KEY);
+    }
+  }
+
+  if(!raw){
+    alert('Protected Backup could not be created because no ledger data was found.');
     return;
   }
+
   const blob=new Blob([raw],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download='mass-sales-ledger-protected-snapshot.json';
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  alert('Protected Backup created successfully. Your ledger data was not changed.');
 }
 
 
@@ -442,7 +458,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.1.0').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.2.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
