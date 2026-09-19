@@ -103,14 +103,16 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
   <div class="card">
     <h2>Entries</h2>
     <div class="grid" style="margin-bottom:8px">
-      <div><label>Filter</label>
+      <div>
+        <label>Filter</label>
         <select id="entryFilter" onchange="renderEntries()" style="width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;margin-top:5px;font-size:16px">
           <option value="all">All Entries</option>
           <option value="sale">Sales</option>
           <option value="expense">Expense</option>
         </select>
       </div>
-      <div><label>Show</label>
+      <div>
+        <label>Show</label>
         <select id="entryCount" onchange="renderEntries()" style="width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;margin-top:5px;font-size:16px">
           <option value="5">Latest 5</option>
           <option value="10">Latest 10</option>
@@ -120,7 +122,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     </div>
     <div style="overflow:auto">
       <table>
-        <thead><tr><th>Date</th><th>Type</th><th>Sales</th><th>Purchase</th><th>Expense</th><th>Profit</th><th>Action</th></tr></thead>
+        <thead>
+          <tr><th>Date</th><th>Type</th><th>Sales</th><th>Purchase</th><th>Expense</th><th>Profit</th><th>Action</th></tr>
+        </thead>
         <tbody id="entriesBody"></tbody>
       </table>
     </div>
@@ -241,19 +245,40 @@ function renderEntries(){
   const body=document.getElementById('entriesBody');
   const filter=document.getElementById('entryFilter')?.value||'all';
   const count=document.getElementById('entryCount')?.value||'5';
-  let list=[...entries].sort((a,b)=>b.date.localeCompare(a.date)||String(b.id).localeCompare(String(a.id)));
+
+  let list=[...entries].sort((a,b)=>
+    b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id))
+  );
+
   if(filter!=='all') list=list.filter(e=>e.type===filter);
+
   const total=list.length;
   if(count!=='all') list=list.slice(0,Number(count));
+
   body.innerHTML='';
+
   list.forEach(e=>{
     const tr=document.createElement('tr');
-    const profit=e.type==='expense'?-e.expense:e.sales-e.purchase;
-    tr.innerHTML=`<td>${e.date}</td><td>${e.type==='expense'?'Expense':'Sales'}</td><td>${money(e.sales)}</td><td>${money(e.purchase)}</td><td>${money(e.expense)}</td><td>${money(profit)}</td><td class="actions">${e.summary?'<span class="small">Opening/Cumulative</span>':`<button class="secondary" onclick="editEntry('${e.id}')">Edit</button><button class="danger" onclick="deleteEntry('${e.id}')">Delete</button>`}</td>`;
+    const profit=e.type==='expense' ? -e.expense : e.sales-e.purchase;
+
+    tr.innerHTML=`<td>${e.date}</td>
+      <td>${e.type==='expense'?'Expense':'Sales'}</td>
+      <td>${money(e.sales)}</td>
+      <td>${money(e.purchase)}</td>
+      <td>${money(e.expense)}</td>
+      <td>${money(profit)}</td>
+      <td class="actions">${e.summary
+        ? '<span class="small">Opening/Cumulative</span>'
+        : `<button class="secondary" onclick="editEntry('${e.id}')">Edit</button>
+           <button class="danger" onclick="deleteEntry('${e.id}')">Delete</button>`}</td>`;
+
     body.appendChild(tr);
   });
+
   document.getElementById('entryInfo').textContent =
-    count==='all' ? `Showing all ${total} entries.` : `Showing latest ${Math.min(Number(count),total)} of ${total} entries.`;
+    count==='all'
+      ? `Showing all ${total} entries.`
+      : `Showing latest ${Math.min(Number(count),total)} of ${total} entries.`;
 }
 
 function dailySummary(){
