@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.0.0 — Auto Update + Data Protection</div>
+    <div class="version">Version 2.1.0 — Safe Auto Update + Data Protection</div>
   </div>
 
   <div class="card">
@@ -436,7 +436,13 @@ function init(){
   document.getElementById('monthSelect').value=d.slice(0,7);
   render();
   if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=2.0.0').then(reg=>{
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(!sessionStorage.getItem('mass_ledger_sw_reloaded')){
+      sessionStorage.setItem('mass_ledger_sw_reloaded','1');
+      location.reload();
+    }
+  });
+  navigator.serviceWorker.register('./sw.js?v=2.1.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
