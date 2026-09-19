@@ -27,7 +27,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 1.8.0 — Clean Entries View</div>
+    <div class="version">Version 1.9.0 — Data Protection</div>
   </div>
 
   <div class="card">
@@ -136,7 +136,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
   </div>
   <div class="card">
     <h2>Backup / Restore</h2>
-    <button class="primary" onclick="downloadBackup()">Download Backup</button>
+    <button class="primary" onclick="downloadBackup()">Download Backup</button><button class="secondary" onclick="downloadProtectedSnapshot()">Protected Backup</button>
     <input type="file" id="restoreFile" accept=".json" onchange="restoreBackup(event)">
     <button class="secondary" onclick="exportCSV()">Export CSV</button>
   </div>
@@ -144,8 +144,82 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 
 <script>
 const KEY='mass_sales_ledger_v1_6';
+
+const PROTECTED_BACKUP_KEY='mass_sales_ledger_protected_snapshot';
+const PROTECTED_VERSION='1.9.0';
+
+function safeParseLedger(raw){
+  try{
+    const obj=JSON.parse(raw);
+    const arr=Array.isArray(obj)?obj:(obj && obj.entries);
+    return Array.isArray(arr)?arr:null;
+  }catch(e){ return null; }
+}
+
+function createProtectedSnapshot(sourceKey, arr){
+  if(!Array.isArray(arr) || !arr.length) return;
+  if(localStorage.getItem(PROTECTED_BACKUP_KEY)) return;
+  const snapshot={
+    app:'Mass Sales Ledger',
+    version:PROTECTED_VERSION,
+    type:'automatic-protection-snapshot',
+    sourceKey,
+    createdAt:new Date().toISOString(),
+    entries:arr
+  };
+  localStorage.setItem(PROTECTED_BACKUP_KEY,JSON.stringify(snapshot));
+}
+
+function protectedLoadEntries(){
+  const currentRaw=localStorage.getItem(KEY);
+  const current=safeParseLedger(currentRaw);
+
+  // Existing data wins. Never overwrite a populated current store.
+  if(Array.isArray(current) && current.length){
+    return current;
+  }
+
+  // If current store is empty, search older ledger stores.
+  const oldKeys=[
+    'mass_sales_ledger_v1_8',
+    'mass_sales_ledger_v1_7',
+    'mass_sales_ledger_v1_6',
+    'mass_sales_ledger_v1_5',
+    'mass_sales_ledger_v1_4',
+    'mass_sales_ledger_v1_3',
+    'mass_sales_ledger_v1_2'
+  ];
+
+  for(const k of oldKeys){
+    const raw=localStorage.getItem(k);
+    if(!raw) continue;
+    const arr=safeParseLedger(raw);
+    if(Array.isArray(arr) && arr.length){
+      // Snapshot first. Do not delete or modify the old key.
+      createProtectedSnapshot(k,arr);
+      return arr;
+    }
+  }
+  return [];
+}
+
+function downloadProtectedSnapshot(){
+  const raw=localStorage.getItem(PROTECTED_BACKUP_KEY);
+  if(!raw){
+    alert('No automatic protection snapshot exists yet.');
+    return;
+  }
+  const blob=new Blob([raw],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='mass-sales-ledger-protected-snapshot.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
 const OLD_KEYS=['mass_sales_ledger_v1_5','mass_sales_ledger_v1_4','mass_sales_ledger_v1_3','mass_sales_ledger_v1_2'];
-let entries=JSON.parse(localStorage.getItem(KEY)||'null')||[];
+let entries=protectedLoadEntries();
 const INITIAL_DATA=[{"id":"opening-20260812-20260909","date":"2026-09-09","type":"sale","sales":202775,"purchase":113086,"expense":0,"summary":true,"periodStart":"2026-08-12","periodEnd":"2026-09-09"},{"id":"sale-20260910","date":"2026-09-10","type":"sale","sales":25050,"purchase":16041,"expense":0,"summary":false},{"id":"sale-20260911","date":"2026-09-11","type":"sale","sales":23800,"purchase":13861,"expense":0,"summary":false},{"id":"sale-20260912","date":"2026-09-12","type":"sale","sales":3300,"purchase":1785,"expense":0,"summary":false},{"id":"sale-20260913","date":"2026-09-13","type":"sale","sales":6800,"purchase":3465,"expense":0,"summary":false},{"id":"sale-20260914-a","date":"2026-09-14","type":"sale","sales":5100,"purchase":2400,"expense":0,"summary":false},{"id":"sale-20260914-b","date":"2026-09-14","type":"sale","sales":2000,"purchase":990,"expense":0,"summary":false},{"id":"sale-20260915","date":"2026-09-15","type":"sale","sales":20900,"purchase":10170,"expense":0,"summary":false},{"id":"sale-20260916","date":"2026-09-16","type":"sale","sales":16690,"purchase":6885,"expense":0,"summary":false}];
 let editingId=null;
 
@@ -153,7 +227,24 @@ function today(){return new Date().toISOString().slice(0,10)}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
 function num(id){return Number(document.getElementById(id).value||0)}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function persist(){localStorage.setItem(KEY,JSON.stringify(entries));render()}
+function persist(){
+  try{
+    const before=localStorage.getItem(KEY);
+    if(before && !localStorage.getItem(PROTECTED_BACKUP_KEY)){
+      const arr=safeParseLedger(before);
+      if(Array.isArray(arr) && arr.length) createProtectedSnapshot(KEY,arr);
+    }
+    const payload=JSON.stringify(entries);
+    localStorage.setItem(KEY,payload);
+    const verify=safeParseLedger(localStorage.getItem(KEY));
+    if(!Array.isArray(verify)){
+      throw new Error('Storage verification failed');
+    }
+    render();
+  }catch(err){
+    alert('Data Protection stopped this save. Existing data was not intentionally overwritten.');
+  }
+}
 function normalizeEntry(e){
   const x={...e};
   x.id=x.id||uid(); x.date=x.date||today(); x.type=x.type||'sale';
