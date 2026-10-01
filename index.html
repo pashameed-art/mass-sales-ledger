@@ -15,7 +15,7 @@ h2{font-size:18px;margin:0 0 12px}.grid{display:grid;grid-template-columns:repea
 label{font-size:13px;font-weight:700}input{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;margin-top:5px;font-size:16px}
 button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;margin:5px 5px 0 0}
 .primary{background:#111827;color:white}.expenseBtn{background:#b45309;color:white}.secondary{background:#e5e7eb}.danger{background:#dc2626;color:white}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:#f9fafb;border-radius:10px;padding:11px}.stat b{display:block;font-size:12px;color:#6b7280}.stat span{font-size:18px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.stat{background:#f9fafb;border-radius:10px;padding:11px}.stat b{display:block;font-size:12px;color:#6b7280}.stat span{font-size:18px;font-weight:800}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;border-bottom:1px solid #e5e7eb;text-align:right}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
 .small{font-size:12px;color:#6b7280}.reportgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .reportitem{background:#f9fafb;padding:10px;border-radius:9px}.reportitem b{display:block;font-size:11px;color:#6b7280}.reportitem span{font-weight:800}
@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.3.0 — Optional App PIN + Safe Auto Update</div>
+    <div class="version">Version 2.4.0 — Profit Display + Optional App PIN</div>
   </div>
 
   <div class="card">
@@ -67,6 +67,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <div class="stats">
       <div class="stat"><b>Sales</b><span id="totalSales">₹0</span></div>
       <div class="stat"><b>Purchase</b><span id="totalPurchase">₹0</span></div>
+      <div class="stat"><b>Profit</b><span id="totalProfit">₹0</span></div>
       <div class="stat"><b>Expense</b><span id="totalExpense">₹0</span></div>
       <div class="stat"><b>Net Profit</b><span id="netProfit">₹0</span></div>
     </div>
@@ -78,6 +79,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <div class="reportgrid">
       <div class="reportitem"><b>Sales</b><span id="dSales">₹0</span></div>
       <div class="reportitem"><b>Purchase</b><span id="dPurchase">₹0</span></div>
+      <div class="reportitem"><b>Profit</b><span id="dGrossProfit">₹0</span></div>
       <div class="reportitem"><b>Expense</b><span id="dExpense">₹0</span></div>
       <div class="reportitem"><b>Net Profit</b><span id="dProfit">₹0</span></div>
     </div>
@@ -93,6 +95,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <div class="reportgrid">
       <div class="reportitem"><b>Sales</b><span id="rSales">₹0</span></div>
       <div class="reportitem"><b>Purchase</b><span id="rPurchase">₹0</span></div>
+      <div class="reportitem"><b>Profit</b><span id="rGrossProfit">₹0</span></div>
       <div class="reportitem"><b>Expense</b><span id="rExpense">₹0</span></div>
       <div class="reportitem"><b>Net Profit</b><span id="rProfit">₹0</span></div>
     </div>
@@ -104,6 +107,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <div class="reportgrid">
       <div class="reportitem"><b>Sales</b><span id="mSales">₹0</span></div>
       <div class="reportitem"><b>Purchase</b><span id="mPurchase">₹0</span></div>
+      <div class="reportitem"><b>Profit</b><span id="mGrossProfit">₹0</span></div>
       <div class="reportitem"><b>Expense</b><span id="mExpense">₹0</span></div>
       <div class="reportitem"><b>Net Profit</b><span id="mProfit">₹0</span></div>
     </div>
@@ -424,6 +428,7 @@ function render(){
   const t=calc();
   document.getElementById('totalSales').textContent=money(t.sales);
   document.getElementById('totalPurchase').textContent=money(t.purchase);
+  document.getElementById('totalProfit').textContent=money(t.sales-t.purchase);
   document.getElementById('totalExpense').textContent=money(t.expense);
   document.getElementById('netProfit').textContent=money(t.profit);
   renderEntries();
@@ -475,7 +480,7 @@ function dailySummary(){
   const d=document.getElementById('dailyDate').value;if(!d)return;
   let s=0,p=0,x=0;
   entries.forEach(e=>{if(e.date===d && !e.summary){if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}}});
-  document.getElementById('dSales').textContent=money(s);document.getElementById('dPurchase').textContent=money(p);document.getElementById('dExpense').textContent=money(x);document.getElementById('dProfit').textContent=money(s-p-x);
+  document.getElementById('dSales').textContent=money(s);document.getElementById('dPurchase').textContent=money(p);document.getElementById('dGrossProfit').textContent=money(s-p);document.getElementById('dExpense').textContent=money(x);document.getElementById('dProfit').textContent=money(s-p-x);
 }
 function rangeReport(){
   const f=document.getElementById('fromDate').value,t=document.getElementById('toDate').value;
@@ -488,13 +493,13 @@ function rangeReport(){
       if(a<=t&&b>=f){s+=e.sales;p+=e.purchase;}
     }else if(e.date>=f&&e.date<=t){s+=e.sales;p+=e.purchase;}
   });
-  document.getElementById('rSales').textContent=money(s);document.getElementById('rPurchase').textContent=money(p);document.getElementById('rExpense').textContent=money(x);document.getElementById('rProfit').textContent=money(s-p-x);
+  document.getElementById('rSales').textContent=money(s);document.getElementById('rPurchase').textContent=money(p);document.getElementById('rGrossProfit').textContent=money(s-p);document.getElementById('rExpense').textContent=money(x);document.getElementById('rProfit').textContent=money(s-p-x);
 }
 function monthlySummary(){
   const m=document.getElementById('monthSelect').value;if(!m)return;
   let s=0,p=0,x=0;
   entries.forEach(e=>{if(e.summary)return;if(e.date.slice(0,7)!==m)return;if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}});
-  document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
+  document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mGrossProfit').textContent=money(s-p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
 }
 function downloadBackup(){
   const blob=new Blob([JSON.stringify({app:'Mass Sales Ledger',version:'1.6.0',exportedAt:new Date().toISOString(),entries},null,2)],{type:'application/json'});
