@@ -21,7 +21,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 .reportitem{background:#f9fafb;padding:10px;border-radius:9px}.reportitem b{display:block;font-size:11px;color:#6b7280}.reportitem span{font-weight:800}
 .actions{white-space:nowrap}
 @media(max-width:650px){.grid,.stats,.reportgrid{grid-template-columns:1fr 1fr}table{font-size:11px}.actions button{padding:7px 8px}}
-</style>
+.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid>div{min-width:0}input,select{min-width:0;max-width:100%;box-sizing:border-box}</style>
 </head>
 <body>
 <div id="pinLock" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,.98);z-index:99999;color:#fff;padding:24px;align-items:center;justify-content:center;box-sizing:border-box">
@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.4.0 — Profit Display + Optional App PIN</div>
+    <div class="version">Version 2.4.1 — Profit Display + Optional App PIN</div>
   </div>
 
   <div class="card">
