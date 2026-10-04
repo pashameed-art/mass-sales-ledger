@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.5.0 — Safety Fixes</div>
+    <div class="version">Version 2.6.0 — Drive Backup</div>
   </div>
 
   <div class="card">
@@ -160,6 +160,13 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <button class="primary" onclick="downloadBackup()">Download Backup</button><button class="secondary" onclick="downloadProtectedSnapshot()">Protected Backup</button>
     <input type="file" id="restoreFile" accept=".json" onchange="restoreBackup(event)">
     <button class="secondary" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div class="card">
+    <h2>Google Drive Backup</h2>
+    <div class="small" id="gLast"></div>
+    <button class="primary" onclick="gBackup()">Backup to Drive</button><button class="secondary" onclick="gShowList()">Restore from Drive</button>
+    <div class="small" id="gSt" style="margin-top:8px"></div>
+    <div id="gList"></div>
   </div>
 </div>
 
@@ -520,26 +527,99 @@ function monthlySummary(){
   entries.forEach(e=>{if(e.summary)return;if(e.date.slice(0,7)!==m)return;if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}});
   document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mGrossProfit').textContent=money(s-p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
 }
+function backupObj(){return {app:'Mass Sales Ledger',version:'2.6.0',exportedAt:new Date().toISOString(),entries}}
 function downloadBackup(tag){
-  const blob=new Blob([JSON.stringify({app:'Mass Sales Ledger',version:'2.5.0',exportedAt:new Date().toISOString(),entries},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify(backupObj(),null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-'+(typeof tag==='string'?tag:'backup')+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
 }
 function validEntry(e){return e&&typeof e==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(String(e.date||''))&&['sales','purchase','expense'].every(k=>e[k]==null||isFinite(Number(e[k])))}
+function applyRestoreObj(obj){
+  const arr=Array.isArray(obj)?obj:(obj&&obj.entries);
+  if(!Array.isArray(arr))throw Error('format');
+  const good=arr.filter(validEntry).map(normalizeEntry);
+  if(!good.length){alert('Backup file-ல் சரியான பதிவுகள் இல்லை.');return false}
+  const bad=arr.length-good.length;
+  if(!confirm('Restore செய்தால் தற்போதைய '+entries.length+' பதிவுகள் மாற்றப்படும். Backup-ல் '+good.length+' பதிவுகள் உள்ளன'+(bad?' ('+bad+' தவறானவை தவிர்க்கப்படும்)':'')+'.\n\nதொடரவா? (முன்னதாக தற்போதைய data-வின் backup தானாக download ஆகும்.)'))return false;
+  downloadBackup('before-restore');
+  localStorage.setItem('mass_sales_ledger_pre_restore',JSON.stringify({createdAt:new Date().toISOString(),entries}));
+  entries=good;localStorage.setItem(KEY,JSON.stringify(entries));render();alert('Backup restored successfully.');
+  return true;
+}
 function restoreBackup(ev){
   const inp=ev.target,file=inp.files[0];if(!file)return;
   const r=new FileReader();
-  r.onload=()=>{try{
-    const obj=JSON.parse(r.result),arr=Array.isArray(obj)?obj:obj.entries;
-    if(!Array.isArray(arr))throw Error('format');
-    const good=arr.filter(validEntry).map(normalizeEntry);
-    if(!good.length){alert('Backup file-ல் சரியான பதிவுகள் இல்லை.');return}
-    const bad=arr.length-good.length;
-    if(!confirm('Restore செய்தால் தற்போதைய '+entries.length+' பதிவுகள் மாற்றப்படும். Backup file-ல் '+good.length+' பதிவுகள் உள்ளன'+(bad?' ('+bad+' தவறானவை தவிர்க்கப்படும்)':'')+'.\n\nதொடரவா? (முன்னதாக தற்போதைய data-வின் backup தானாக download ஆகும்.)'))return;
-    downloadBackup('before-restore');
-    localStorage.setItem('mass_sales_ledger_pre_restore',JSON.stringify({createdAt:new Date().toISOString(),entries}));
-    entries=good;localStorage.setItem(KEY,JSON.stringify(entries));render();alert('Backup restored successfully.');
-  }catch(e){alert('Invalid backup file.');}finally{inp.value=''}};
+  r.onload=()=>{try{applyRestoreObj(JSON.parse(r.result))}catch(e){alert('Invalid backup file.')}finally{inp.value=''}};
   r.readAsText(file);
+}
+
+/* ---------- Google Drive backup ---------- */
+const GCID='123737120474-8sqc1sb4p0i9j7s9nq56j4gkd784lm1n.apps.googleusercontent.com',GPRE='MASS-SALES-LEDGER-Backup-',GKEEP=10,G_AT='mass_ledger_last_gdrive_backup_at';
+let gTok=null,gExp=0,gCli=null;
+function gs(m,ok){const s=document.getElementById('gSt');if(s){s.textContent=m;s.style.color=ok===false?'#b91c1c':'#126d66'}}
+function gLastUI(){const v=localStorage.getItem(G_AT),e=document.getElementById('gLast');if(e)e.textContent='Last Drive backup: '+(v?new Date(v).toLocaleString('en-IN'):'none yet')}
+function gLoad(){return new Promise((ok,no)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return ok();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=()=>ok();s.onerror=()=>no(new Error('Google library could not load (check internet)'));document.head.appendChild(s);
+})}
+async function gToken(){
+  if(gTok&&Date.now()<gExp)return gTok;
+  await gLoad();
+  return new Promise((ok,no)=>{
+    const cb=r=>{if(r&&r.access_token){gTok=r.access_token;gExp=Date.now()+Math.max(60,(Number(r.expires_in)||3600)-120)*1000;ok(gTok)}else no(new Error('Google authorization failed. If this page is inside another app, open it in its own tab.'))};
+    try{if(!gCli)gCli=google.accounts.oauth2.initTokenClient({client_id:GCID,scope:'https://www.googleapis.com/auth/drive.file',callback:cb});else gCli.callback=cb;gCli.requestAccessToken({prompt:''})}catch(e){no(e)}
+  });
+}
+async function gList(tok){
+  const q="trashed = false and mimeType = 'application/json'";let f=[],pt='';
+  do{
+    const r=await fetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&spaces=drive&pageSize=100&fields='+encodeURIComponent('nextPageToken,files(id,name,createdTime)')+(pt?'&pageToken='+encodeURIComponent(pt):''),{headers:{Authorization:'Bearer '+tok}});
+    if(!r.ok)throw new Error('Could not list Drive files');
+    const d=await r.json();f=f.concat(d.files||[]);pt=d.nextPageToken||'';
+  }while(pt&&f.length<500);
+  return f.filter(x=>(x.name||'').indexOf(GPRE)===0);
+}
+async function gBackup(){
+  try{
+    if(!entries.length){alert('Backup செய்ய data இல்லை.');return}
+    gs('Connecting to Google Drive…');
+    const tok=await gToken(),now=new Date(),pad=n=>String(n).padStart(2,'0');
+    const name=GPRE+now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'_'+pad(now.getHours())+'-'+pad(now.getMinutes())+'-'+pad(now.getSeconds())+'.json';
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify({name,mimeType:'application/json'})],{type:'application/json'}));
+    form.append('file',new Blob([JSON.stringify(backupObj(),null,1)],{type:'application/json'}));
+    gs('Uploading…');
+    const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{Authorization:'Bearer '+tok},body:form});
+    if(!r.ok)throw new Error('Drive upload failed');
+    const id=(await r.json().catch(()=>({}))).id;
+    localStorage.setItem(G_AT,now.toISOString());gLastUI();
+    try{
+      const files=(await gList(tok)).sort((a,b)=>a.name<b.name?1:-1);
+      for(const f of files.slice(GKEEP)){if(f.id===id)continue;await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(f.id),{method:'PATCH',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({trashed:true})})}
+    }catch(e){}
+    gs('✅ Drive backup done: '+name);
+  }catch(e){gs('❌ '+(e.message||e),false)}
+}
+async function gShowList(){
+  try{
+    gs('Looking for Drive backups…');
+    const tok=await gToken(),f=(await gList(tok)).sort((a,b)=>String(b.createdTime).localeCompare(String(a.createdTime))).slice(0,10);
+    const box=document.getElementById('gList');box.innerHTML='';
+    f.forEach(x=>{
+      const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #e5e7eb';
+      const info=document.createElement('div');info.className='small';info.textContent=x.name+' • '+new Date(x.createdTime).toLocaleString('en-IN');
+      const btn=document.createElement('button');btn.className='secondary';btn.textContent='Restore';btn.onclick=()=>gRestore(x.id);
+      row.appendChild(info);row.appendChild(btn);box.appendChild(row);
+    });
+    gs(f.length?'Choose a backup to restore.':'No backup files found in Drive.');
+  }catch(e){gs('❌ '+(e.message||e),false)}
+}
+async function gRestore(id){
+  try{
+    const tok=await gToken(),r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+'?alt=media',{headers:{Authorization:'Bearer '+tok}});
+    if(!r.ok)throw new Error('Could not download the file');
+    const obj=await r.json();
+    if(!applyRestoreObj(obj))gs('Restore cancelled.');else gs('✅ Restored from Drive.');
+  }catch(e){gs('❌ '+(e.message||e),false)}
 }
 function exportCSV(){
   const rows=[['Date','Type','Sales','Purchase (Mydeen)','Expense','Profit']];
@@ -559,6 +639,7 @@ function init(){
   document.getElementById('toDate').value=d;
   document.getElementById('monthSelect').value=d.slice(0,7);
   render();
+  gLastUI();
   applyPinLock();
   if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange', ()=>{
@@ -567,7 +648,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.5.0').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.6.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
