@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.4.1 — Profit Display + Optional App PIN</div>
+    <div class="version">Version 2.5.0 — Safety Fixes</div>
   </div>
 
   <div class="card">
@@ -118,7 +118,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <div class="small" id="pinStatus">PIN is OFF</div>
     <button class="primary" id="setPinBtn" onclick="setOrChangePin()">Set App PIN</button>
     <button class="secondary" id="disablePinBtn" onclick="disablePin()" style="display:none">Disable PIN</button>
-    <div class="small" style="margin-top:8px">Optional app lock. Your ledger data is not changed. PIN is stored as a hash on this device.</div>
+    <div class="small" style="margin-top:8px">Optional app lock. Your ledger data is not changed. PIN is stored as a hash on this device. இது சாதாரண மறைப்புக்கு மட்டும். PIN மறந்தால் மீட்க முடியாது — Backup file-ஐப் பத்திரமாக வைத்திருங்கள்.</div>
   </div>
 
   <div class="card">
@@ -196,7 +196,8 @@ async function setOrChangePin(){
   if(confirmPin!==pin){alert('PIN confirmation does not match.');return;}
   localStorage.setItem(PIN_KEY,await hashPin(pin));
   updatePinUI();
-  alert('App PIN enabled. Your ledger data was not changed.');
+  downloadBackup('with-pin');
+  alert('App PIN enabled. Your ledger data was not changed.\n\n⚠️ PIN மறந்தால் மீட்க முடியாது. இப்போது download ஆன backup file-ஐப் பத்திரமாக வைத்திருங்கள்.');
 }
 async function disablePin(){
   const stored=localStorage.getItem(PIN_KEY);
@@ -318,10 +319,10 @@ function downloadProtectedSnapshot(){
 const OLD_KEYS=['mass_sales_ledger_v1_5','mass_sales_ledger_v1_4','mass_sales_ledger_v1_3','mass_sales_ledger_v1_2'];
 let entries=protectedLoadEntries();
 const INITIAL_DATA=[{"id":"opening-20260812-20260909","date":"2026-09-09","type":"sale","sales":202775,"purchase":113086,"expense":0,"summary":true,"periodStart":"2026-08-12","periodEnd":"2026-09-09"},{"id":"sale-20260910","date":"2026-09-10","type":"sale","sales":25050,"purchase":16041,"expense":0,"summary":false},{"id":"sale-20260911","date":"2026-09-11","type":"sale","sales":23800,"purchase":13861,"expense":0,"summary":false},{"id":"sale-20260912","date":"2026-09-12","type":"sale","sales":3300,"purchase":1785,"expense":0,"summary":false},{"id":"sale-20260913","date":"2026-09-13","type":"sale","sales":6800,"purchase":3465,"expense":0,"summary":false},{"id":"sale-20260914-a","date":"2026-09-14","type":"sale","sales":5100,"purchase":2400,"expense":0,"summary":false},{"id":"sale-20260914-b","date":"2026-09-14","type":"sale","sales":2000,"purchase":990,"expense":0,"summary":false},{"id":"sale-20260915","date":"2026-09-15","type":"sale","sales":20900,"purchase":10170,"expense":0,"summary":false},{"id":"sale-20260916","date":"2026-09-16","type":"sale","sales":16690,"purchase":6885,"expense":0,"summary":false}];
-let editingId=null;
+let editSaleId=null,editExpId=null;
 
-function today(){return new Date().toISOString().slice(0,10)}
-function money(n){return '₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function money(n){n=Number(n||0);return (n<0?'−':'')+'₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:2})}
 function num(id){return Number(document.getElementById(id).value||0)}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 function persist(){
@@ -344,7 +345,7 @@ function persist(){
 }
 function normalizeEntry(e){
   const x={...e};
-  x.id=x.id||uid(); x.date=x.date||today(); x.type=x.type||'sale';
+  x.id=String(x.id||uid()).replace(/[^\w-]/g,'_'); x.date=x.date||today(); x.type=x.type||'sale';
   x.sales=Number(x.sales||0); x.purchase=Number(x.purchase||0);
   x.expense=Number(x.expense||0); x.summary=!!x.summary;
   return x;
@@ -376,10 +377,10 @@ function saveSale(){
   const date=document.getElementById('saleDate').value||today();
   const sales=num('sales'), purchase=num('purchase');
   if(sales<=0 && purchase<=0){alert('Enter Sales or Purchase amount.');return}
-  if(editingId){
-    const e=entries.find(x=>x.id===editingId);
-    if(e){e.date=date;e.sales=sales;e.purchase=purchase;e.type='sale';}
-    editingId=null;
+  if(editSaleId){
+    const e=entries.find(x=>x.id===editSaleId&&x.type!=='expense');
+    if(!e){alert('Edit செய்யும் பதிவு கிடைக்கவில்லை.');clearSale();return}
+    e.date=date;e.sales=sales;e.purchase=purchase;
   }else entries.push({id:uid(),date,type:'sale',sales,purchase,expense:0,summary:false});
   clearSale();persist();
 }
@@ -387,23 +388,24 @@ function saveExpense(){
   const date=document.getElementById('expenseDate').value||today();
   const expense=num('expenseAmount');
   if(expense<=0){alert('Enter Expense Amount.');return}
-  if(editingId){
-    const e=entries.find(x=>x.id===editingId);
-    if(e && e.type==='expense'){e.date=date;e.expense=expense;}
-    editingId=null;
+  if(editExpId){
+    const e=entries.find(x=>x.id===editExpId&&x.type==='expense');
+    if(!e){alert('Edit செய்யும் பதிவு கிடைக்கவில்லை.');clearExpense();return}
+    e.date=date;e.expense=expense;
   }else entries.push({id:uid(),date,type:'expense',sales:0,purchase:0,expense,summary:false});
   clearExpense();persist();
 }
-function clearSale(){editingId=null;document.getElementById('saleDate').value=today();document.getElementById('sales').value='';document.getElementById('purchase').value='';document.getElementById('saleProfit').value='';}
-function clearExpense(){editingId=null;document.getElementById('expenseDate').value=today();document.getElementById('expenseAmount').value='';}
+function clearSale(){editSaleId=null;document.getElementById('saleDate').value=today();document.getElementById('sales').value='';document.getElementById('purchase').value='';document.getElementById('saleProfit').value='';}
+function clearExpense(){editExpId=null;document.getElementById('expenseDate').value=today();document.getElementById('expenseAmount').value='';}
 function editEntry(id){
   const e=entries.find(x=>x.id===id); if(!e || e.summary)return;
-  editingId=id;
   if(e.type==='expense'){
+    clearSale(); editExpId=id;
     document.getElementById('expenseDate').value=e.date;
     document.getElementById('expenseAmount').value=e.expense;
     document.getElementById('expenseAmount').focus();
   }else{
+    clearExpense(); editSaleId=id;
     document.getElementById('saleDate').value=e.date;
     document.getElementById('sales').value=e.sales;
     document.getElementById('purchase').value=e.purchase;
@@ -413,7 +415,10 @@ function editEntry(id){
 }
 function deleteEntry(id){
   const e=entries.find(x=>x.id===id); if(!e || e.summary)return;
-  if(confirm('Delete this entry?')){entries=entries.filter(x=>x.id!==id);persist();}
+  if(confirm('Delete this entry?')){
+    if(editSaleId===id)clearSale(); if(editExpId===id)clearExpense();
+    entries=entries.filter(x=>x.id!==id);persist();
+  }
 }
 function updateSaleProfit(){document.getElementById('saleProfit').value=money(num('sales')-num('purchase'))}
 document.getElementById('sales').addEventListener('input',updateSaleProfit);
@@ -485,34 +490,55 @@ function dailySummary(){
 function rangeReport(){
   const f=document.getElementById('fromDate').value,t=document.getElementById('toDate').value;
   if(!f||!t)return;
-  let s=0,p=0,x=0;
+  let s=0,p=0,x=0;window._rp=false;
   entries.forEach(e=>{
     if(e.type==='expense'){if(e.date>=f&&e.date<=t)x+=e.expense;return}
     if(e.summary){
       const a=e.periodStart||e.date,b=e.periodEnd||e.date;
-      if(a<=t&&b>=f){s+=e.sales;p+=e.purchase;}
+      if(a<=t&&b>=f){const fr=overlapFrac(a,b,f,t);s+=e.sales*fr;p+=e.purchase*fr;if(fr<1)window._rp=true;}
     }else if(e.date>=f&&e.date<=t){s+=e.sales;p+=e.purchase;}
   });
   document.getElementById('rSales').textContent=money(s);document.getElementById('rPurchase').textContent=money(p);document.getElementById('rGrossProfit').textContent=money(s-p);document.getElementById('rExpense').textContent=money(x);document.getElementById('rProfit').textContent=money(s-p-x);
 }
+function overlapFrac(a,b,f,t){
+  const d=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10))/864e5;
+  const tot=d(b)-d(a)+1; if(!(tot>0))return 1;
+  const lo=Math.max(d(a),d(f)),hi=Math.min(d(b),d(t));
+  return Math.max(0,Math.min(1,(hi-lo+1)/tot));
+}
+const _rangeBase=rangeReport;
+rangeReport=function(){
+  _rangeBase();
+  const g=document.getElementById('rSales');const grid=g&&g.closest?g.closest('.reportgrid'):null;if(!grid)return;
+  let n=document.getElementById('rangeNote');
+  if(!n){n=document.createElement('div');n.id='rangeNote';n.className='small';n.style.marginTop='8px';grid.parentNode.appendChild(n)}
+  n.textContent=window._rp?'குறிப்பு: தொடக்க (cumulative) கணக்கு, தேர்ந்த தேதிகளுக்குப் பொருந்தும் நாட்களின் விகிதத்தில் சேர்க்கப்பட்டுள்ளது.':'';
+};
 function monthlySummary(){
   const m=document.getElementById('monthSelect').value;if(!m)return;
   let s=0,p=0,x=0;
   entries.forEach(e=>{if(e.summary)return;if(e.date.slice(0,7)!==m)return;if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}});
   document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mGrossProfit').textContent=money(s-p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
 }
-function downloadBackup(){
-  const blob=new Blob([JSON.stringify({app:'Mass Sales Ledger',version:'1.6.0',exportedAt:new Date().toISOString(),entries},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-backup-v1.6.json';a.click();URL.revokeObjectURL(a.href);
+function downloadBackup(tag){
+  const blob=new Blob([JSON.stringify({app:'Mass Sales Ledger',version:'2.5.0',exportedAt:new Date().toISOString(),entries},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-'+(typeof tag==='string'?tag:'backup')+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
 }
+function validEntry(e){return e&&typeof e==='object'&&/^\d{4}-\d{2}-\d{2}$/.test(String(e.date||''))&&['sales','purchase','expense'].every(k=>e[k]==null||isFinite(Number(e[k])))}
 function restoreBackup(ev){
-  const file=ev.target.files[0];if(!file)return;
+  const inp=ev.target,file=inp.files[0];if(!file)return;
   const r=new FileReader();
   r.onload=()=>{try{
-    const obj=JSON.parse(r.result);const arr=Array.isArray(obj)?obj:obj.entries;
-    if(!Array.isArray(arr))throw Error();
-    entries=arr.map(normalizeEntry);localStorage.setItem(KEY,JSON.stringify(entries));render();alert('Backup restored successfully.');
-  }catch(e){alert('Invalid backup file.');}};
+    const obj=JSON.parse(r.result),arr=Array.isArray(obj)?obj:obj.entries;
+    if(!Array.isArray(arr))throw Error('format');
+    const good=arr.filter(validEntry).map(normalizeEntry);
+    if(!good.length){alert('Backup file-ல் சரியான பதிவுகள் இல்லை.');return}
+    const bad=arr.length-good.length;
+    if(!confirm('Restore செய்தால் தற்போதைய '+entries.length+' பதிவுகள் மாற்றப்படும். Backup file-ல் '+good.length+' பதிவுகள் உள்ளன'+(bad?' ('+bad+' தவறானவை தவிர்க்கப்படும்)':'')+'.\n\nதொடரவா? (முன்னதாக தற்போதைய data-வின் backup தானாக download ஆகும்.)'))return;
+    downloadBackup('before-restore');
+    localStorage.setItem('mass_sales_ledger_pre_restore',JSON.stringify({createdAt:new Date().toISOString(),entries}));
+    entries=good;localStorage.setItem(KEY,JSON.stringify(entries));render();alert('Backup restored successfully.');
+  }catch(e){alert('Invalid backup file.');}finally{inp.value=''}};
   r.readAsText(file);
 }
 function exportCSV(){
@@ -541,7 +567,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.3.0').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.5.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
