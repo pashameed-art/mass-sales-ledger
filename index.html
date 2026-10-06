@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.6.0 — Drive Backup</div>
+    <div class="version">Version 2.6.1 — Lean</div>
   </div>
 
   <div class="card">
@@ -73,17 +73,6 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     </div>
   </div>
 
-  <div class="card">
-    <h2>Date-wise Daily Summary</h2>
-    <div><label>Select Date</label><input type="date" id="dailyDate" onchange="dailySummary()"></div>
-    <div class="reportgrid">
-      <div class="reportitem"><b>Sales</b><span id="dSales">₹0</span></div>
-      <div class="reportitem"><b>Purchase</b><span id="dPurchase">₹0</span></div>
-      <div class="reportitem"><b>Profit</b><span id="dGrossProfit">₹0</span></div>
-      <div class="reportitem"><b>Expense</b><span id="dExpense">₹0</span></div>
-      <div class="reportitem"><b>Net Profit</b><span id="dProfit">₹0</span></div>
-    </div>
-  </div>
 
   <div class="card">
     <h2>Date Range Report</h2>
@@ -101,17 +90,6 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     </div>
   </div>
 
-  <div class="card">
-    <h2>Monthly Summary</h2>
-    <div><label>Select Month</label><input type="month" id="monthSelect" onchange="monthlySummary()"></div>
-    <div class="reportgrid">
-      <div class="reportitem"><b>Sales</b><span id="mSales">₹0</span></div>
-      <div class="reportitem"><b>Purchase</b><span id="mPurchase">₹0</span></div>
-      <div class="reportitem"><b>Profit</b><span id="mGrossProfit">₹0</span></div>
-      <div class="reportitem"><b>Expense</b><span id="mExpense">₹0</span></div>
-      <div class="reportitem"><b>Net Profit</b><span id="mProfit">₹0</span></div>
-    </div>
-  </div>
 
   <div class="card" id="pinCard">
     <h2>App PIN</h2>
@@ -157,9 +135,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
   </div>
   <div class="card">
     <h2>Backup / Restore</h2>
-    <button class="primary" onclick="downloadBackup()">Download Backup</button><button class="secondary" onclick="downloadProtectedSnapshot()">Protected Backup</button>
+    <button class="primary" onclick="downloadBackup()">Download Backup</button>
     <input type="file" id="restoreFile" accept=".json" onchange="restoreBackup(event)">
-    <button class="secondary" onclick="exportCSV()">Export CSV</button>
   </div>
   <div class="card">
     <h2>Google Drive Backup</h2>
@@ -444,7 +421,7 @@ function render(){
   document.getElementById('totalExpense').textContent=money(t.expense);
   document.getElementById('netProfit').textContent=money(t.profit);
   renderEntries();
-  dailySummary(); rangeReport(); monthlySummary();
+  rangeReport();
 }
 function renderEntries(){
   const body=document.getElementById('entriesBody');
@@ -488,12 +465,6 @@ function renderEntries(){
       : `Showing latest ${Math.min(Number(count),total)} of ${total} entries.`;
 }
 
-function dailySummary(){
-  const d=document.getElementById('dailyDate').value;if(!d)return;
-  let s=0,p=0,x=0;
-  entries.forEach(e=>{if(e.date===d && !e.summary){if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}}});
-  document.getElementById('dSales').textContent=money(s);document.getElementById('dPurchase').textContent=money(p);document.getElementById('dGrossProfit').textContent=money(s-p);document.getElementById('dExpense').textContent=money(x);document.getElementById('dProfit').textContent=money(s-p-x);
-}
 function rangeReport(){
   const f=document.getElementById('fromDate').value,t=document.getElementById('toDate').value;
   if(!f||!t)return;
@@ -521,13 +492,7 @@ rangeReport=function(){
   if(!n){n=document.createElement('div');n.id='rangeNote';n.className='small';n.style.marginTop='8px';grid.parentNode.appendChild(n)}
   n.textContent=window._rp?'குறிப்பு: தொடக்க (cumulative) கணக்கு, தேர்ந்த தேதிகளுக்குப் பொருந்தும் நாட்களின் விகிதத்தில் சேர்க்கப்பட்டுள்ளது.':'';
 };
-function monthlySummary(){
-  const m=document.getElementById('monthSelect').value;if(!m)return;
-  let s=0,p=0,x=0;
-  entries.forEach(e=>{if(e.summary)return;if(e.date.slice(0,7)!==m)return;if(e.type==='expense')x+=e.expense;else{s+=e.sales;p+=e.purchase;}});
-  document.getElementById('mSales').textContent=money(s);document.getElementById('mPurchase').textContent=money(p);document.getElementById('mGrossProfit').textContent=money(s-p);document.getElementById('mExpense').textContent=money(x);document.getElementById('mProfit').textContent=money(s-p-x);
-}
-function backupObj(){return {app:'Mass Sales Ledger',version:'2.6.0',exportedAt:new Date().toISOString(),entries}}
+function backupObj(){return {app:'Mass Sales Ledger',version:'2.6.1',exportedAt:new Date().toISOString(),entries}}
 function downloadBackup(tag){
   const blob=new Blob([JSON.stringify(backupObj(),null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-'+(typeof tag==='string'?tag:'backup')+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
@@ -634,10 +599,10 @@ function init(){
     localStorage.setItem(KEY,JSON.stringify(entries));
   }
   const d=today();
-  document.getElementById('saleDate').value=d;document.getElementById('expenseDate').value=d;document.getElementById('dailyDate').value=d;
+  document.getElementById('saleDate').value=d;document.getElementById('expenseDate').value=d;
   document.getElementById('fromDate').value=entries.length?entries.reduce((m,e)=>e.date<m?e.date:m,d):d;
   document.getElementById('toDate').value=d;
-  document.getElementById('monthSelect').value=d.slice(0,7);
+  
   render();
   gLastUI();
   applyPinLock();
@@ -648,7 +613,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.6.0').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.6.1').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
