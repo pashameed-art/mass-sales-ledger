@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
 <div class="container">
   <div class="header">
     <h1>Mass Sales Ledger</h1>
-    <div class="version">Version 2.6.1 — Lean</div>
+    <div class="version">Version 2.7.0 — Update Button</div>
   </div>
 
   <div class="card">
@@ -144,6 +144,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 5px;b
     <button class="primary" onclick="gBackup()">Backup to Drive</button><button class="secondary" onclick="gShowList()">Restore from Drive</button>
     <div class="small" id="gSt" style="margin-top:8px"></div>
     <div id="gList"></div>
+  </div>
+  <div class="card">
+    <h2>App Update</h2>
+    <div class="small">புதிய version வரவில்லை என்றால் இதைத் தட்டுங்கள். Your data is not deleted.</div>
+    <button class="secondary" onclick="appRefresh()">Update / Refresh App</button>
   </div>
 </div>
 
@@ -301,7 +306,7 @@ function downloadProtectedSnapshot(){
 
 
 const OLD_KEYS=['mass_sales_ledger_v1_5','mass_sales_ledger_v1_4','mass_sales_ledger_v1_3','mass_sales_ledger_v1_2'];
-let entries=protectedLoadEntries();
+let entries=(()=>{const seen=new Set();return (protectedLoadEntries()||[]).filter(e=>e&&typeof e==='object').map(normalizeEntry).map(x=>{if(seen.has(x.id))x.id=uid();seen.add(x.id);return x})})();
 const INITIAL_DATA=[{"id":"opening-20260812-20260909","date":"2026-09-09","type":"sale","sales":202775,"purchase":113086,"expense":0,"summary":true,"periodStart":"2026-08-12","periodEnd":"2026-09-09"},{"id":"sale-20260910","date":"2026-09-10","type":"sale","sales":25050,"purchase":16041,"expense":0,"summary":false},{"id":"sale-20260911","date":"2026-09-11","type":"sale","sales":23800,"purchase":13861,"expense":0,"summary":false},{"id":"sale-20260912","date":"2026-09-12","type":"sale","sales":3300,"purchase":1785,"expense":0,"summary":false},{"id":"sale-20260913","date":"2026-09-13","type":"sale","sales":6800,"purchase":3465,"expense":0,"summary":false},{"id":"sale-20260914-a","date":"2026-09-14","type":"sale","sales":5100,"purchase":2400,"expense":0,"summary":false},{"id":"sale-20260914-b","date":"2026-09-14","type":"sale","sales":2000,"purchase":990,"expense":0,"summary":false},{"id":"sale-20260915","date":"2026-09-15","type":"sale","sales":20900,"purchase":10170,"expense":0,"summary":false},{"id":"sale-20260916","date":"2026-09-16","type":"sale","sales":16690,"purchase":6885,"expense":0,"summary":false}];
 let editSaleId=null,editExpId=null;
 
@@ -329,9 +334,10 @@ function persist(){
 }
 function normalizeEntry(e){
   const x={...e};
-  x.id=String(x.id||uid()).replace(/[^\w-]/g,'_'); x.date=x.date||today(); x.type=x.type||'sale';
-  x.sales=Number(x.sales||0); x.purchase=Number(x.purchase||0);
-  x.expense=Number(x.expense||0); x.summary=!!x.summary;
+  x.id=String(x.id||uid()).replace(/[^\w-]/g,'_'); x.date=/^\d{4}-\d{2}-\d{2}$/.test(String(x.date||''))?String(x.date):today(); x.type=x.type||'sale';
+  const n0=v=>{v=Number(v);return isFinite(v)?v:0};
+  x.sales=n0(x.sales); x.purchase=n0(x.purchase);
+  x.expense=n0(x.expense); x.summary=!!x.summary;
   return x;
 }
 function migrate(){
@@ -492,7 +498,16 @@ rangeReport=function(){
   if(!n){n=document.createElement('div');n.id='rangeNote';n.className='small';n.style.marginTop='8px';grid.parentNode.appendChild(n)}
   n.textContent=window._rp?'குறிப்பு: தொடக்க (cumulative) கணக்கு, தேர்ந்த தேதிகளுக்குப் பொருந்தும் நாட்களின் விகிதத்தில் சேர்க்கப்பட்டுள்ளது.':'';
 };
-function backupObj(){return {app:'Mass Sales Ledger',version:'2.6.1',exportedAt:new Date().toISOString(),entries}}
+async function appRefresh(){
+  try{
+    const base=location.origin+location.pathname.replace(/[^/]*$/,'');
+    const rs=await navigator.serviceWorker.getRegistrations();
+    for(const r of rs){ if(r.scope.indexOf(base)===0) await r.unregister(); }
+    for(const k of await caches.keys()) await caches.delete(k);
+  }catch(e){}
+  location.reload();
+}
+function backupObj(){return {app:'Mass Sales Ledger',version:'2.6.2',exportedAt:new Date().toISOString(),entries}}
 function downloadBackup(tag){
   const blob=new Blob([JSON.stringify(backupObj(),null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mass-sales-ledger-'+(typeof tag==='string'?tag:'backup')+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
@@ -613,7 +628,7 @@ function init(){
       location.reload();
     }
   });
-  navigator.serviceWorker.register('./sw.js?v=2.6.1').then(reg=>{
+  navigator.serviceWorker.register('./sw.js?v=2.7.0').then(reg=>{
     reg.update();
   }).catch(()=>{});
 }
